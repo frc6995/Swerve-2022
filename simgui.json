@@ -1,0 +1,108 @@
+{
+  "HALProvider": {
+    "Other Devices": {
+      "DutyCycleEncoder[17]": {
+        "header": {
+          "open": true
+        }
+      },
+      "SPARK MAX [2]": {
+        "header": {
+          "open": true
+        }
+      },
+      "SPARK MAX [3]": {
+        "header": {
+          "open": true
+        }
+      },
+      "SPARK MAX [4]": {
+        "header": {
+          "open": true
+        }
+      },
+      "SPARK MAX [5]": {
+        "header": {
+          "open": true
+        }
+      },
+      "SPARK MAX [6]": {
+        "header": {
+          "open": true
+        }
+      },
+      "SPARK MAX [7]": {
+        "header": {
+          "open": true
+        }
+      },
+      "SPARK MAX [8]": {
+        "header": {
+          "open": true
+        }
+      }
+    }
+  },
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/LiveWindow/DriveSubsystem": "Subsystem",
+      "/LiveWindow/SwerveModule": "Subsystem",
+      "/LiveWindow/Ungrouped/DigitalInput[13]": "Digital Input",
+      "/LiveWindow/Ungrouped/DigitalInput[14]": "Digital Input",
+      "/LiveWindow/Ungrouped/DigitalInput[15]": "Digital Input",
+      "/LiveWindow/Ungrouped/DigitalInput[17]": "Digital Input",
+      "/LiveWindow/Ungrouped/PIDController[1]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[2]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[3]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[4]": "PIDController",
+      "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
+      "/LiveWindow/Ungrouped/navX-Sensor[4]": "Gyro",
+      "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/SendableChooser[0]": "String Chooser"
+    },
+    "windows": {
+      "/SmartDashboard/Field": {
+        "Robot": {
+          "length": 0.6859999895095825
+        },
+        "backLeft": {
+          "length": 0.20000000298023224,
+          "width": 0.20000000298023224
+        },
+        "backRight": {
+          "length": 0.20000000298023224,
+          "width": 0.20000000298023224
+        },
+        "bottom": 903,
+        "frontLeft": {
+          "length": 0.20000000298023224,
+          "width": 0.20000000298023224
+        },
+        "frontRight": {
+          "arrowSize": 100,
+          "length": 0.20000000298023224,
+          "style": "Box/Image",
+          "width": 0.20000000298023224
+        },
+        "height": 8.229599952697754,
+        "image": "C:\\Users\\jashu\\PathWeaver\\Games\\2022 Rapid React\\2022-field.png",
+        "left": 74,
+        "right": 1781,
+        "top": 45,
+        "width": 16.459199905395508,
+        "window": {
+          "visible": true
+        }
+      }
+    }
+  },
+  "NetworkTables": {
+    "SmartDashboard": {
+      "Field": {
+        "open": true
+      },
+      "open": true
+    }
+  }
+}
