@@ -47,6 +47,7 @@
     "types": {
       "/FMSInfo": "FMSInfo",
       "/LiveWindow/DriveSubsystem": "Subsystem",
+      "/LiveWindow/DrivebaseS": "Subsystem",
       "/LiveWindow/SwerveModule": "Subsystem",
       "/LiveWindow/Ungrouped/DigitalInput[13]": "Digital Input",
       "/LiveWindow/Ungrouped/DigitalInput[14]": "Digital Input",
@@ -80,7 +81,6 @@
           "width": 0.20000000298023224
         },
         "frontRight": {
-          "arrowSize": 100,
           "length": 0.20000000298023224,
           "style": "Box/Image",
           "width": 0.20000000298023224

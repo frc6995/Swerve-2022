@@ -123,6 +123,8 @@ public class DrivebaseS extends SubsystemBase {
         rearLeft.resetDistance();
         rearRight.resetDistance();
 
+        // Allow the robot rotation controller to treat crossing over the rollover point as a valid way to move
+        // this is useful because if we want to go from 179 to -179 degrees, it's really a 2-degree move, not 358 degrees
         rotationController.enableContinuousInput(-Math.PI, Math.PI);
 
     }
@@ -172,14 +174,17 @@ public class DrivebaseS extends SubsystemBase {
         // use kinematics (wheel placements) to convert overall robot state to array of individual module states
         SwerveModuleState[] states;
 
+        // If we are stopped (no wheel velocity commanded) then any number of wheel angles could be valid.
+        // By default it would point all modules forward when stopped. Here, we override this.
         if(Math.abs(forward) < 0.05 && Math.abs(strafe) < 0.05 && Math.abs(rotation) < 0.05) {
                 states = getStoppedStates();
         } else {
+            // make sure the wheels don't try to spin faster than the maximum speed possible
             states = DriveConstants.kinematics.toSwerveModuleStates(speeds);
             SwerveDriveKinematics.desaturateWheelSpeeds(states, DriveConstants.maxDriveSpeed);
         } 
 
-        // make sure the wheels don't try to spin faster than the maximum speed possible
+        
         
 
         setModuleStates(states);
@@ -215,7 +220,9 @@ public class DrivebaseS extends SubsystemBase {
 
     }
 
-    // returns an array of SwerveModuleState
+    // returns an array of SwerveModuleStates. 
+    // Front(left, right), Rear(left, right)
+    // This order is important to remain consistent across the codebase, or commands can get swapped around.
     public SwerveModuleState[] getModuleStates() {
 
         SwerveModuleState[] states = {
@@ -287,6 +294,7 @@ public class DrivebaseS extends SubsystemBase {
         }
     }
 
+    // Gets the current heading based on odometry. (this value will reflect odometry resets)
     public Rotation2d getPoseHeading() {
         return getPose().getRotation();
     }
@@ -306,23 +314,19 @@ public class DrivebaseS extends SubsystemBase {
     }
 
     public void resetImu() {
-
         navx.reset();
         simGyro = new Rotation2d();
     }
 
-    public void resetGyro(Rotation2d heading) {
-        
-    }
-
     @Override
     public void simulationPeriodic() {
+        // Derive the change in gyro heading from the rotation component of the robot speed
         ChassisSpeeds speeds = DriveConstants.kinematics.toChassisSpeeds(getModuleStates());
         double rotationalSpeed = speeds.omegaRadiansPerSecond;
         SmartDashboard.putNumber("rotSpeed", rotationalSpeed);
         SmartDashboard.putNumber("fwdSpeed", speeds.vxMetersPerSecond);
         SmartDashboard.putNumber("leftSpeed", speeds.vyMetersPerSecond);
-        simGyro = simGyro.plus(new Rotation2d(rotationalSpeed * 0.02)); // Add the rotation traveled in one cycle.
+        simGyro = simGyro.plus(new Rotation2d(rotationalSpeed * 0.02)); // Add the rotation traveled in one cycle (0.02 s).
         SmartDashboard.putNumber("simGyro", simGyro.getRadians());
     }
 
@@ -332,6 +336,8 @@ public class DrivebaseS extends SubsystemBase {
      */
     public void drawRobotOnField(Field2d field) {
         field.setRobotPose(getPose());
+        // Draw a pose that is based on the robot pose, but shifted by the translation of the module relative to robot center,
+        // then rotated around its own center by the angle of the module.
         field.getObject("frontLeft").setPose(
             getPose().transformBy(new Transform2d(DriveConstants.frontLeftTranslation, getModuleStates()[0].angle))
         );

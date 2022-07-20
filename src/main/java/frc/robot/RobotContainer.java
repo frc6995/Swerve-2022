@@ -18,7 +18,6 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.InputDevices;
 import frc.robot.auto.Trajectories;
-import frc.robot.commands.drivetrain.DriveTime;
 import frc.robot.commands.drivetrain.FollowTrajectory;
 import frc.robot.commands.drivetrain.OperatorControlC;
 import frc.robot.subsystems.DrivebaseS;
@@ -39,8 +38,6 @@ public class RobotContainer {
 
     public RobotContainer() {
 
-        SmartDashboard.putNumber("desired RPM", 0);
-
         drivebaseS.setDefaultCommand(
             new OperatorControlC(
                 gamepad::getLeftY,
@@ -53,7 +50,7 @@ public class RobotContainer {
 
         configureButtonBindings();
 
-        autoSelector.setDefaultOption("s curve", 
+        autoSelector.setDefaultOption("mid to ring", 
             new InstantCommand(
                 ()->drivebaseS.resetPose(Trajectories.MID_BALL_START_POSE))
             .andThen(
