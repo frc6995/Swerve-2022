@@ -7,8 +7,8 @@ import java.util.List;
 
 import edu.wpi.first.math.controller.PIDController;
 import frc.robot.subsystems.DrivebaseS;
-import frc.robot.util.TrajectoryReader;
 import frc.robot.util.trajectory.PoseListSwerveControllerCommand;
+import frc.robot.util.trajectory.TrajectoryReader;
 
 public class FollowPoseList extends PoseListSwerveControllerCommand {
 

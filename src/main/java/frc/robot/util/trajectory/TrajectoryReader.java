@@ -1,4 +1,4 @@
-package frc.robot.util;
+package frc.robot.util.trajectory;
 
 import java.io.BufferedReader;
 import java.io.File;

@@ -34,7 +34,7 @@ import frc.robot.commands.drivetrain.FollowPoseList;
 import frc.robot.commands.drivetrain.FollowTrajectory;
 import frc.robot.commands.drivetrain.OperatorControlC;
 import frc.robot.subsystems.DrivebaseS;
-import frc.robot.util.TrajectoryReader;
+import frc.robot.util.trajectory.TrajectoryReader;
 
 public class RobotContainer {
 
