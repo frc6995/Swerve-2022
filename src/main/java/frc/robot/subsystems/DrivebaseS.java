@@ -138,9 +138,31 @@ public class DrivebaseS extends SubsystemBase {
         SmartDashboard.putNumber("heading", getHeading().getDegrees());
         SmartDashboard.putNumber("Odometry x", odometry.getPoseMeters().getX());
         SmartDashboard.putNumber("Odometry y", odometry.getPoseMeters().getY());
+        SmartDashboard.putNumber("fwd", commandedForward);
+        SmartDashboard.putNumber("left", commandedStrafe);
+        SmartDashboard.putNumber("rotation", commandedRotation);
         
     }
     
+    public void drive(ChassisSpeeds speeds) {
+        // use kinematics (wheel placements) to convert overall robot state to array of individual module states
+        SwerveModuleState[] states;
+
+        // If we are stopped (no wheel velocity commanded) then any number of wheel angles could be valid.
+        // By default it would point all modules forward when stopped. Here, we override this.
+        if(Math.abs(speeds.vxMetersPerSecond) < 0.05 
+            && Math.abs(speeds.vyMetersPerSecond) < 0.05
+            && Math.abs(speeds.omegaRadiansPerSecond) < 0.05) {
+                states = getStoppedStates();
+        } else {
+            // make sure the wheels don't try to spin faster than the maximum speed possible
+            states = DriveConstants.kinematics.toSwerveModuleStates(speeds);
+            SwerveDriveKinematics.desaturateWheelSpeeds(states, DriveConstants.maxDriveSpeed);
+        } 
+
+        setModuleStates(states);
+
+    }
     /**
      * method for driving the robot
      * Parameters:
@@ -171,24 +193,8 @@ public class DrivebaseS extends SubsystemBase {
                     forward, strafe, rotation, getPoseHeading())
                 : new ChassisSpeeds(forward, strafe, rotation);
         
-        // use kinematics (wheel placements) to convert overall robot state to array of individual module states
-        SwerveModuleState[] states;
-
-        // If we are stopped (no wheel velocity commanded) then any number of wheel angles could be valid.
-        // By default it would point all modules forward when stopped. Here, we override this.
-        if(Math.abs(forward) < 0.05 && Math.abs(strafe) < 0.05 && Math.abs(rotation) < 0.05) {
-                states = getStoppedStates();
-        } else {
-            // make sure the wheels don't try to spin faster than the maximum speed possible
-            states = DriveConstants.kinematics.toSwerveModuleStates(speeds);
-            SwerveDriveKinematics.desaturateWheelSpeeds(states, DriveConstants.maxDriveSpeed);
-        } 
-
+        drive(speeds);
         
-        
-
-        setModuleStates(states);
-
     }
 
     /**
