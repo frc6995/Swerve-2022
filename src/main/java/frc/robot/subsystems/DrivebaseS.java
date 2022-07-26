@@ -92,8 +92,8 @@ public class DrivebaseS extends SubsystemBase {
 
     public final ProfiledPIDController rotationController = 
     new ProfiledPIDController(3.0, 0, 0,
-        new TrapezoidProfile.Constraints(AutoConstants.maxVelMetersPerSec,
-            AutoConstants.maxAccelMetersPerSecondSq
+        new TrapezoidProfile.Constraints(4*Math.PI,
+            2*Math.PI
         )
     );
 

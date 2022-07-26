@@ -9,6 +9,8 @@ import com.revrobotics.REVPhysicsSim;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -49,6 +51,9 @@ public class SwerveModule extends SubsystemBase {
 
     private final SparkMaxPIDController rotationController;
     private final SparkMaxPIDController driveController;
+
+    private final SlewRateLimiter rotationSim; //velocity limiter to smooth out setpoint jumps
+    private final SlewRateLimiter driveSim; //acceleration limiter
 
     public SwerveModule(
         int driveMotorId, 
@@ -125,6 +130,9 @@ public class SwerveModule extends SubsystemBase {
         REVPhysicsSim.getInstance().addSparkMax(driveMotor, DCMotor.getNEO(1));
         REVPhysicsSim.getInstance().addSparkMax(rotationMotor, DCMotor.getNEO(1));
 
+        driveSim = new SlewRateLimiter(8); // 4 m/s/s
+        rotationSim = new SlewRateLimiter(4*Math.PI); // 2pi radians per second
+
     }
 
     /**
@@ -166,7 +174,7 @@ public class SwerveModule extends SubsystemBase {
      */
     public Rotation2d getCanEncoderAngle() {
         if(RobotBase.isSimulation()) {
-            return desiredState.angle;
+            return new Rotation2d(desiredState.angle.getRadians());
         }
         else {
             return new Rotation2d(rotationEncoder.getPosition());
@@ -181,7 +189,7 @@ public class SwerveModule extends SubsystemBase {
      */
     public double getCurrentVelocityMetersPerSecond() {
         if(RobotBase.isSimulation()) {
-            return desiredState.speedMetersPerSecond;
+            return driveSim.calculate(desiredState.speedMetersPerSecond);
         }
         else {
             return driveEncoder.getVelocity();

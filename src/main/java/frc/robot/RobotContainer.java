@@ -70,7 +70,7 @@ public class RobotContainer {
         
         autoSelector.setDefaultOption("mid to ring", 
             new InstantCommand(
-                ()->drivebaseS.resetPose(new Pose2d()))
+                ()->drivebaseS.resetPose(poseList.get(0)))
             .andThen(
                 new RepeatCommand(new FollowPoseList(
                     TrajectoryReader.readFileTrajectory(trajectoryFile), drivebaseS))
