@@ -19,6 +19,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.util.sim.DutyCycleEncoderSim;
+import frc.robot.util.sim.SimEncoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
@@ -33,7 +34,7 @@ public class SwerveModule extends SubsystemBase {
 
     private SwerveModuleState desiredState = new SwerveModuleState();
 
-    private static final double rotationkP = 0.1;
+    private static final double rotationkP = 0.2;
     private static final double rotationkD = 0.5;
 
     private static final double drivekP = 0.01;
@@ -44,6 +45,16 @@ public class SwerveModule extends SubsystemBase {
     private final RelativeEncoder driveEncoder;
     private final RelativeEncoder rotationEncoder;
 
+    /**
+     * Uses meters and m/s
+     */
+    private final SimEncoder driveEncoderSim;
+
+    /**
+     * Uses radians and rad/s
+     */
+    private final SimEncoder rotationEncoderSim;
+
     private final DutyCycleEncoder magEncoder;
     private final DutyCycleEncoderSim magEncoderSim;
 
@@ -52,8 +63,6 @@ public class SwerveModule extends SubsystemBase {
     private final SparkMaxPIDController rotationController;
     private final SparkMaxPIDController driveController;
 
-    private final SlewRateLimiter rotationSim; //velocity limiter to smooth out setpoint jumps
-    private final SlewRateLimiter driveSim; //acceleration limiter
 
     public SwerveModule(
         int driveMotorId, 
@@ -67,6 +76,9 @@ public class SwerveModule extends SubsystemBase {
 
         driveEncoder = driveMotor.getEncoder();
         rotationEncoder = rotationMotor.getEncoder();
+
+        driveEncoderSim = new SimEncoder();
+        rotationEncoderSim = new SimEncoder();
 
         //Config the mag encoder, which is directly on the module rotation shaft.
 
@@ -109,8 +121,8 @@ public class SwerveModule extends SubsystemBase {
         // = number of meters traveled
 
         driveEncoder.setPositionConversionFactor(
-            Math.PI * (DriveConstants.wheelDiameterMeters) 
-            / DriveConstants.driveWheelGearReduction
+            Math.PI * (DriveConstants.WHEEL_RADIUS_M * 2) 
+            / DriveConstants.ENC_PULSE_PER_REV
         );
 
         //set the output of the drive encoder to be in meters per second (instead of motor rpm) for velocity measurement
@@ -119,20 +131,12 @@ public class SwerveModule extends SubsystemBase {
         // 1/6.86 wheel rots per motor rot *
         // motor rpm = wheel speed, m/s
         driveEncoder.setVelocityConversionFactor(
-            (DriveConstants.wheelDiameterMeters) * Math.PI / 60 / DriveConstants.driveWheelGearReduction
+            (DriveConstants.WHEEL_RADIUS_M * 2) * Math.PI / 60 / DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV
         );
 
         //set the output of the rotation encoder to be in radians
         // (2pi rad/(module rotation)) / 12.8 (motor rots/module rots)
-        rotationEncoder.setPositionConversionFactor(2.0 * Math.PI / DriveConstants.rotationWheelGearReduction);
-
-        // add the NEOs to rev's physics sim. We don't actually use this during sim though.
-        REVPhysicsSim.getInstance().addSparkMax(driveMotor, DCMotor.getNEO(1));
-        REVPhysicsSim.getInstance().addSparkMax(rotationMotor, DCMotor.getNEO(1));
-
-        driveSim = new SlewRateLimiter(8); // 4 m/s/s
-        rotationSim = new SlewRateLimiter(4*Math.PI); // 2pi radians per second
-
+        rotationEncoder.setPositionConversionFactor(2.0 * Math.PI * DriveConstants.AZMTH_REVS_PER_ENC_REV);
     }
 
     /**
@@ -141,6 +145,7 @@ public class SwerveModule extends SubsystemBase {
     public void resetDistance() {
 
         driveEncoder.setPosition(0.0);
+        driveEncoderSim.setPosition(0);
 
     }
 
@@ -149,8 +154,12 @@ public class SwerveModule extends SubsystemBase {
      * @return the distance in meters.
      */
     public double getDriveDistanceMeters() {
-
-        return driveEncoder.getPosition();
+        if (RobotBase.isSimulation()) {
+            return driveEncoderSim.getPosition();
+        }
+        else {
+            return driveEncoder.getPosition();
+        }
 
     }
     
@@ -174,7 +183,7 @@ public class SwerveModule extends SubsystemBase {
      */
     public Rotation2d getCanEncoderAngle() {
         if(RobotBase.isSimulation()) {
-            return new Rotation2d(desiredState.angle.getRadians());
+            return new Rotation2d(rotationEncoderSim.getPosition());
         }
         else {
             return new Rotation2d(rotationEncoder.getPosition());
@@ -189,11 +198,19 @@ public class SwerveModule extends SubsystemBase {
      */
     public double getCurrentVelocityMetersPerSecond() {
         if(RobotBase.isSimulation()) {
-            return driveSim.calculate(desiredState.speedMetersPerSecond);
+            return driveEncoderSim.getVelocity();
         }
         else {
             return driveEncoder.getVelocity();
         }
+    }
+
+    public double getAppliedDriveVoltage() {
+        return driveMotor.getAppliedOutput();
+    }
+
+    public double getAppliedRotationVoltage() {
+        return rotationMotor.getAppliedOutput();
     }
 
 
@@ -205,6 +222,7 @@ public class SwerveModule extends SubsystemBase {
     */
     public void initRotationOffset() {
         rotationEncoder.setPosition(getMagEncoderAngle().getRadians());
+        rotationEncoderSim.setPosition(getMagEncoderAngle().getRadians());
     }
 
     /**
@@ -217,9 +235,11 @@ public class SwerveModule extends SubsystemBase {
 
         // Save the desired state for reference (Simulation assumes the modules always are at the desired state)
         
-        this.desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
+        desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
+        this.desiredState = desiredState;
 
-        // Feed the angle to the on-MAX rotation position PID
+        if(RobotBase.isReal()) {
+            // Feed the angle to the on-MAX rotation position PID
         rotationController.setReference(
             this.desiredState.angle.getRadians(),
             ControlType.kPosition
@@ -233,13 +253,34 @@ public class SwerveModule extends SubsystemBase {
             DriveConstants.driveFF.calculate(this.desiredState.speedMetersPerSecond)
         );
 
+        }
+        else {
+            rotationMotor.setVoltage(rotationkP * 10 * this.desiredState.angle.minus(getCanEncoderAngle()).getRadians());
+            driveMotor.setVoltage(DriveConstants.driveFF.calculate(this.desiredState.speedMetersPerSecond));
+        }
     }
 
+    /**
+     * Resets drive and rotation encoders to 0 position. (in sim and irl)
+     */
     public void resetEncoders() {
 
         driveEncoder.setPosition(0);
         rotationEncoder.setPosition(0);
+        driveEncoderSim.setPosition(0);
+        rotationEncoderSim.setPosition(0);
 
     }
     
+    /**
+     * Set the state of the module as specified by the simulator
+     * @param angle_rad
+     * @param wheelPos_m
+     * @param wheelVel_m
+     */
+    public void setSimState(double angle_rad, double wheelPos_m, double wheelVel_m) {
+        rotationEncoderSim.setPosition(angle_rad);
+        driveEncoderSim.setPosition(wheelPos_m);
+        driveEncoderSim.setPosition(wheelVel_m);
+    }
 }

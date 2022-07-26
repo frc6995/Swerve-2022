@@ -29,7 +29,7 @@ public class FollowTrajectory extends SwerveControllerCommand {
         super(
             trajectory, 
             drive::getPose, 
-            DriveConstants.kinematics, 
+            DriveConstants.m_kinematics, 
             new PIDController(0.001, 0, 0),
             new PIDController(0.001, 0, 00), 
             drive.rotationController,

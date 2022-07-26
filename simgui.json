@@ -40,6 +40,11 @@
         "header": {
           "open": true
         }
+      },
+      "navX-Sensor[0]": {
+        "header": {
+          "open": true
+        }
       }
     }
   },
@@ -68,14 +73,14 @@
           "length": 0.6859999895095825
         },
         "backLeft": {
-          "length": 0.20000000298023224,
-          "width": 0.20000000298023224
+          "length": 0.009999999776482582,
+          "width": 1.0
         },
         "backRight": {
           "length": 0.20000000298023224,
           "width": 0.20000000298023224
         },
-        "bottom": 206,
+        "bottom": 903,
         "cupid": {
           "arrowSize": 4,
           "arrowWeight": 0.5,
@@ -93,12 +98,12 @@
           "style": "Box/Image",
           "width": 0.20000000298023224
         },
-        "height": 1.5,
-        "image": "C:\\Users\\jashu\\PathWeaver\\Games\\3mx3m\\FTC_Field_1.png",
-        "left": 206,
-        "right": 423,
-        "top": 12,
-        "width": 1.5,
+        "height": 8.229599952697754,
+        "image": "C:\\Users\\jashu\\PathWeaver\\Games\\2022 Rapid React\\2022-field.png",
+        "left": 74,
+        "right": 1781,
+        "top": 45,
+        "width": 16.459199905395508,
         "window": {
           "visible": true
         }
@@ -112,8 +117,7 @@
       },
       "Ungrouped": {
         "open": true
-      },
-      "open": true
+      }
     },
     "SmartDashboard": {
       "Field": {
@@ -159,6 +163,15 @@
                 1.0
               ],
               "id": "NT:/SmartDashboard/fwdSpeed"
+            },
+            {
+              "color": [
+                0.7686275243759155,
+                0.30588236451148987,
+                0.32156863808631897,
+                1.0
+              ],
+              "id": "SPARK MAX [8]-Applied Output"
             }
           ]
         }
@@ -167,21 +180,16 @@
     "Plot <1>": {
       "plots": [
         {
-          "axis": [
-            {
-              "autoFit": true
-            }
-          ],
           "height": 332,
           "series": [
             {
               "color": [
-                0.2980392277240753,
-                0.44705885648727417,
-                0.6901960968971252,
+                0.8666667342185974,
+                0.5176470875740051,
+                0.32156863808631897,
                 1.0
               ],
-              "id": "NT:/SmartDashboard/curTime"
+              "id": "SPARK MAX [7]-Applied Output"
             }
           ]
         }
