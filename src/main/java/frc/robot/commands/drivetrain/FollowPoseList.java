@@ -33,8 +33,8 @@ public class FollowPoseList extends PoseListSwerveControllerCommand {
         super(
             trajectory, 
             drive::getPose,
-            new PIDController(1, 0, 0),
-            new PIDController(1, 0, 0), 
+            new PIDController(1, 0, 0.5),
+            new PIDController(1, 0, 0.5), 
             drive.rotationController,
             drive::drive, 
             drive

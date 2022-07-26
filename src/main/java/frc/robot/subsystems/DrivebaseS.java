@@ -168,8 +168,8 @@ public class DrivebaseS extends SubsystemBase {
         odometry.update(getHeading(), getModuleStates());
 
         SmartDashboard.putNumber("heading", getHeading().getDegrees());
-        SmartDashboard.putNumber("Odometry x", odometry.getPoseMeters().getX());
-        SmartDashboard.putNumber("Odometry y", odometry.getPoseMeters().getY());
+        SmartDashboard.putNumber("Odometry x", getPose().getX());
+        SmartDashboard.putNumber("Odometry y", getPose().getY());
         SmartDashboard.putNumber("fwd", commandedForward);
         SmartDashboard.putNumber("left", commandedStrafe);
         SmartDashboard.putNumber("rotation", commandedRotation);
@@ -356,8 +356,11 @@ public class DrivebaseS extends SubsystemBase {
                 moduleSims.get(idx).setInputVoltages(wheelVolts, azmthVolts);
             }
         }
-        // Derive the change in gyro heading from the rotation component of the robot speed
-        quadSwerveSim.update(0.02);
+
+        for (int i = 0; i< 20; i++) {
+            quadSwerveSim.update(0.001);
+        }
+        
 
         for(int idx = 0; idx < QuadSwerveSim.NUM_MODULES; idx++){
             double azmthPos = moduleSims.get(idx).getAzimuthEncoderPositionRev();

@@ -42,8 +42,8 @@ public class Constants {
 
     public static final class DriveConstants {
 
-        static public final double WHEEL_BASE_WIDTH_M = Units.inchesToMeters(25);
-        static public final double WHEEL_RADIUS_M = Units.inchesToMeters(4.0/2.0); //six inch (diameter) wheels
+        static public final double WHEEL_BASE_WIDTH_M = Units.inchesToMeters(21);
+        static public final double WHEEL_RADIUS_M = 0.0508; //Units.inchesToMeters(4.0/2.0); //four inch (diameter) wheels
         static public final double ROBOT_MASS_kg = Units.lbsToKilograms(140);
         static public final double ROBOT_MOI_KGM2 = 1.0/12.0 * ROBOT_MASS_kg * Math.pow((WHEEL_BASE_WIDTH_M*1.1),2) * 2; //Model moment of intertia as a square slab slightly bigger than wheelbase with axis through center
         // Drivetrain Performance Mechanical limits
@@ -85,13 +85,16 @@ public class Constants {
         );
 
         
-        public static final double WHEEL_REVS_PER_ENC_REV = 1.0/6.86;
+        public static final double WHEEL_REVS_PER_ENC_REV = 1.0/5.14;
         public static final double AZMTH_REVS_PER_ENC_REV = 1.0/12.8;
 
         public static final double rotationMotorMaxSpeedRadPerSec = 1.0;
         public static final double rotationMotorMaxAccelRadPerSecSq = 1.0;
 
-        public static final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.254, 2.42);
+        //kv: (12 volts * 60 s/min * 1/5.14 WRevs/MRevs * wheel rad * 2pi  / (6000 MRPM * 
+        public static final double kv = (12 /(100 * WHEEL_REVS_PER_ENC_REV * WHEEL_RADIUS_M * 2 * Math.PI));
+        public static final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.254, kv);
+        
 
         public static final double maxDriveSpeed = 14.4;
         public static final double teleopTurnRateDegPerSec = 360.0; //Rate the robot will spin with full rotation command
