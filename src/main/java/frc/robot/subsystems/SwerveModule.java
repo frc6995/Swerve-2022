@@ -77,7 +77,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
     ) {
         driveMotor = new CANSparkMax(driveMotorId, MotorType.kBrushless);
         rotationMotor = new CANSparkMax(rotationMotorId, MotorType.kBrushless);
-        
+        driveMotor.restoreFactoryDefaults(true);
+        rotationMotor.restoreFactoryDefaults(true);
         driveEncoder = driveMotor.getEncoder();
         rotationEncoder = rotationMotor.getEncoder();
 
@@ -173,7 +174,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
     }
 
     public void driveRotationVolts(double volts) {
-        driveMotor.setVoltage(volts);
+        rotationMotor.setVoltage(volts);
     }
     
     /**
