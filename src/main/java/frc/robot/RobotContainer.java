@@ -54,14 +54,13 @@ public class RobotContainer {
     public RobotContainer() {
 
         drivebaseS.setDefaultCommand(
-            // new OperatorControlC(
-            //     gamepad::getLeftY,
-            //     gamepad::getLeftX,
-            //     gamepad::getRightX,
-            //     true,
-            //     drivebaseS
-            // )
-            new RunCommand(()->drivebaseS.driveRotationVolts(0, 3.0), drivebaseS)
+            new OperatorControlC(
+                gamepad::getLeftY,
+                gamepad::getLeftX,
+                gamepad::getRightX,
+                true,
+                drivebaseS
+            )
         );
 
         configureButtonBindings();
