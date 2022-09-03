@@ -14,29 +14,29 @@ public class Constants {
 
     public static final class CANDevices {
 
-        public static final int frontLeftRotationMotorId = 7;
-        public static final int frontLeftDriveMotorId = 8;
+        public static final int frontLeftRotationMotorId = 17;
+        public static final int frontLeftDriveMotorId = 18;
 
-        public static final int frontRightRotationMotorId = 1;
-        public static final int frontRightDriveMotorId = 2;
+        public static final int frontRightRotationMotorId = 11;
+        public static final int frontRightDriveMotorId = 12;
 
-        public static final int rearLeftRotationMotorId = 6;
-        public static final int rearLeftDriveMotorId = 5;
+        public static final int rearLeftRotationMotorId = 15;
+        public static final int rearLeftDriveMotorId = 16;
 
-        public static final int rearRightRotationMotorId = 3;
-        public static final int rearRightDriveMotorId = 4;
+        public static final int rearRightRotationMotorId = 13;
+        public static final int rearRightDriveMotorId = 14;
 
 
-        public static final int frontLeftRotationEncoderId = 17;
-        public static final int frontRightRotationEncoderId = 13;
-        public static final int rearLeftRotationEncoderId = 15;
-        public static final int rearRightRotationEncoderId = 14;
+        public static final int frontLeftRotationEncoderId = 6;
+        public static final int frontRightRotationEncoderId = 7;
+        public static final int rearLeftRotationEncoderId = 8;
+        public static final int rearRightRotationEncoderId = 9;
 
     }
 
     public static final class InputDevices {
 
-        public static final int gamepadPort = 0;
+        public static final int GAMEPAD_PORT = 0;
 
     }
 
@@ -47,9 +47,9 @@ public class Constants {
         static public final double ROBOT_MASS_kg = Units.lbsToKilograms(140);
         static public final double ROBOT_MOI_KGM2 = 1.0/12.0 * ROBOT_MASS_kg * Math.pow((WHEEL_BASE_WIDTH_M*1.1),2) * 2; //Model moment of intertia as a square slab slightly bigger than wheelbase with axis through center
         // Drivetrain Performance Mechanical limits
-        static public final double MAX_FWD_REV_SPEED_MPS = Units.feetToMeters(12.0);
-        static public final double MAX_STRAFE_SPEED_MPS = Units.feetToMeters(8.0);
-        static public final double MAX_ROTATE_SPEED_RAD_PER_SEC = Units.degreesToRadians(360.0);
+        static public final double MAX_FWD_REV_SPEED_MPS = Units.feetToMeters(19.0);
+        static public final double MAX_STRAFE_SPEED_MPS = Units.feetToMeters(19.0);
+        static public final double MAX_ROTATE_SPEED_RAD_PER_SEC = Units.degreesToRadians(720.0);
         static public final double MAX_TRANSLATE_ACCEL_MPS2 = MAX_FWD_REV_SPEED_MPS/0.25; //0-full time of 0.25 second
         static public final double MAX_ROTATE_ACCEL_RAD_PER_SEC_2 = MAX_ROTATE_SPEED_RAD_PER_SEC/0.25; //0-full time of 0.25 second
         

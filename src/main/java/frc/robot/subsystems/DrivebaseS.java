@@ -32,8 +32,9 @@ import java.util.List;
 import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
 import frc.robot.util.sim.wpiClasses.SwerveModuleSim;
+import io.github.oblarg.oblog.Loggable;
 
-public class DrivebaseS extends SubsystemBase {
+public class DrivebaseS extends SubsystemBase implements Loggable {
 
     /**
      * Subsystem that controls the drivetrain of the robot
@@ -44,10 +45,10 @@ public class DrivebaseS extends SubsystemBase {
      * absolute encoder offsets for the wheels
      * 180 degrees added to offset values to invert one side of the robot so that it doesn't spin in place
      */
-    private static final double frontLeftAngleOffset = Units.degreesToRadians(239.5);
-    private static final double frontRightAngleOffset = Units.degreesToRadians(256.7 + 180);
-    private static final double rearLeftAngleOffset = Units.degreesToRadians(322.8);
-    private static final double rearRightAngleOffset = Units.degreesToRadians(180.0 + 180);
+    private static final double frontLeftAngleOffset =5.708331;
+    private static final double frontRightAngleOffset = -0.638995 + Math.PI;
+    private static final double rearLeftAngleOffset = 1.787997;
+    private static final double rearRightAngleOffset = 2.513654 + Math.PI;
 
     /**
      * SwerveModule objects
@@ -161,6 +162,9 @@ public class DrivebaseS extends SubsystemBase {
 
     }
 
+    public void driveRotationVolts(int module, double volts) {
+        modules.get(module).driveRotationVolts(volts);
+    }
     @Override
     public void periodic() {
 
@@ -344,7 +348,7 @@ public class DrivebaseS extends SubsystemBase {
 
     @Override
     public void simulationPeriodic() {
-
+        // set inputs
         if(!DriverStation.isEnabled()){
             for(int idx = 0; idx < QuadSwerveSim.NUM_MODULES; idx++){
                 moduleSims.get(idx).setInputVoltages(0.0, 0.0);
@@ -357,11 +361,15 @@ public class DrivebaseS extends SubsystemBase {
             }
         }
 
+        Pose2d prevRobotPose = quadSwerveSim.getCurPose();
+
+        // Update model (several small steps)
         for (int i = 0; i< 20; i++) {
             quadSwerveSim.update(0.001);
         }
         
 
+        //Set the state of the sim'd hardware
         for(int idx = 0; idx < QuadSwerveSim.NUM_MODULES; idx++){
             double azmthPos = moduleSims.get(idx).getAzimuthEncoderPositionRev();
             azmthPos = azmthPos / AZMTH_ENC_COUNTS_PER_MODULE_REV * 2 * Math.PI;
@@ -371,6 +379,7 @@ public class DrivebaseS extends SubsystemBase {
             double wheelVel = moduleSims.get(idx).getWheelEncoderVelocityRevPerSec();
             wheelVel = wheelVel / WHEEL_ENC_COUNTS_PER_WHEEL_REV * 2 * Math.PI * WHEEL_RADIUS_M;
             modules.get(idx).setSimState(azmthPos, wheelPos, wheelVel);
+            simNavx.update(quadSwerveSim.getCurPose(), prevRobotPose);
         }
     }
 
@@ -400,9 +409,9 @@ public class DrivebaseS extends SubsystemBase {
         return new SwerveModuleSim(DCMotor.getNEO(1), 
                                    DCMotor.getNEO(1), 
                                    WHEEL_RADIUS_M,
-                                   1.0/AZMTH_REVS_PER_ENC_REV,
+                                   1.0/AZMTH_REVS_PER_ENC_REV, // steering motor rotations per wheel steer rotation
                                    1.0/WHEEL_REVS_PER_ENC_REV,
-                                   1.0/AZMTH_REVS_PER_ENC_REV,
+                                   1.0/AZMTH_REVS_PER_ENC_REV, // same as motor rotations because NEO encoder is on motor shaft
                                    1.0/WHEEL_REVS_PER_ENC_REV,
                                    1.3,
                                    0.7,

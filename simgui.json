@@ -64,6 +64,7 @@
       "/LiveWindow/Ungrouped/PIDController[4]": "PIDController",
       "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
       "/LiveWindow/Ungrouped/navX-Sensor[4]": "Gyro",
+      "/Shuffleboard/RobotContainer/drivebaseS": "Subsystem",
       "/SmartDashboard/Field": "Field2d",
       "/SmartDashboard/SendableChooser[0]": "String Chooser"
     },
@@ -119,8 +120,31 @@
         "open": true
       }
     },
+    "Shuffleboard": {
+      "DrivebaseS": {
+        "SwerveModule[12,11]": {
+          "open": true
+        },
+        "SwerveModule[14,13]": {
+          "open": true
+        },
+        "SwerveModule[16,15]": {
+          "open": true
+        },
+        "SwerveModule[18,17]": {
+          "open": true
+        },
+        "open": true
+      }
+    },
     "SmartDashboard": {
-      "Field": {
+      "Shuffleboard": {
+        "DrivebaseS": {
+          "SwerveModule[12,11]": {
+            "open": true
+          },
+          "open": true
+        },
         "open": true
       },
       "open": true
@@ -139,12 +163,12 @@
           "series": [
             {
               "color": [
-                0.2980392277240753,
+                0.5058823823928833,
                 0.44705885648727417,
-                0.6901960968971252,
+                0.7019608020782471,
                 1.0
               ],
-              "id": "NT:/SmartDashboard/Odometry x"
+              "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/desiredAngle"
             },
             {
               "color": [
@@ -153,25 +177,7 @@
                 0.32156863808631897,
                 1.0
               ],
-              "id": "SPARK MAX [8]-Velocity"
-            },
-            {
-              "color": [
-                0.3333333432674408,
-                0.658823549747467,
-                0.4078431725502014,
-                1.0
-              ],
-              "id": "NT:/SmartDashboard/fwdSpeed"
-            },
-            {
-              "color": [
-                0.7686275243759155,
-                0.30588236451148987,
-                0.32156863808631897,
-                1.0
-              ],
-              "id": "SPARK MAX [8]-Applied Output"
+              "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/rotEncoder"
             }
           ]
         }
@@ -193,7 +199,10 @@
             }
           ]
         }
-      ]
+      ],
+      "window": {
+        "visible": false
+      }
     }
   }
 }

@@ -35,6 +35,7 @@ import frc.robot.commands.drivetrain.FollowTrajectory;
 import frc.robot.commands.drivetrain.OperatorControlC;
 import frc.robot.subsystems.DrivebaseS;
 import frc.robot.util.trajectory.TrajectoryReader;
+import io.github.oblarg.oblog.annotations.Log;
 
 public class RobotContainer {
 
@@ -42,8 +43,8 @@ public class RobotContainer {
      * Establishes the controls and subsystems of the robot
      */
 
-    private final CommandXboxController gamepad = new CommandXboxController(InputDevices.gamepadPort);
-
+    private final CommandXboxController gamepad = new CommandXboxController(InputDevices.GAMEPAD_PORT);
+    @Log
     private final DrivebaseS drivebaseS = new DrivebaseS();
 
     private final Field2d field = new Field2d();
@@ -53,13 +54,14 @@ public class RobotContainer {
     public RobotContainer() {
 
         drivebaseS.setDefaultCommand(
-            new OperatorControlC(
-                gamepad::getLeftY,
-                gamepad::getLeftX,
-                gamepad::getRightX,
-                true,
-                drivebaseS
-            )
+            // new OperatorControlC(
+            //     gamepad::getLeftY,
+            //     gamepad::getLeftX,
+            //     gamepad::getRightX,
+            //     true,
+            //     drivebaseS
+            // )
+            new RunCommand(()->drivebaseS.driveRotationVolts(0, 3.0), drivebaseS)
         );
 
         configureButtonBindings();
@@ -76,6 +78,8 @@ public class RobotContainer {
                     TrajectoryReader.readFileTrajectory(trajectoryFile), drivebaseS))
             )
             );
+
+        
         field.getObject("cupid").setPoses(poseList);
         SmartDashboard.putData(field);
 

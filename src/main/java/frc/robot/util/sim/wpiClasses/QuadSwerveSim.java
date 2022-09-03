@@ -169,6 +169,6 @@ public class QuadSwerveSim {
 
     public Pose2d getCurPose(){
         return curPose;
-    }
+    }    
 
 }
