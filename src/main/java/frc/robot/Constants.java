@@ -1,6 +1,11 @@
 package frc.robot;
 
+import java.util.Arrays;
+import java.util.List;
+
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
@@ -9,69 +14,96 @@ public class Constants {
 
     public static final class CANDevices {
 
-        public static final int frontLeftRotationMotorId = 7;
-        public static final int frontLeftDriveMotorId = 8;
+        public static final int frontLeftRotationMotorId = 17;
+        public static final int frontLeftDriveMotorId = 18;
 
-        public static final int frontRightRotationMotorId = 1;
-        public static final int frontRightDriveMotorId = 2;
+        public static final int frontRightRotationMotorId = 11;
+        public static final int frontRightDriveMotorId = 12;
 
-        public static final int rearLeftRotationMotorId = 6;
-        public static final int rearLeftDriveMotorId = 5;
+        public static final int rearLeftRotationMotorId = 15;
+        public static final int rearLeftDriveMotorId = 16;
 
-        public static final int rearRightRotationMotorId = 3;
-        public static final int rearRightDriveMotorId = 4;
+        public static final int rearRightRotationMotorId = 13;
+        public static final int rearRightDriveMotorId = 14;
 
 
-        public static final int frontLeftRotationEncoderId = 17;
-        public static final int frontRightRotationEncoderId = 13;
-        public static final int rearLeftRotationEncoderId = 15;
-        public static final int rearRightRotationEncoderId = 14;
+        public static final int frontLeftRotationEncoderId = 6;
+        public static final int frontRightRotationEncoderId = 7;
+        public static final int rearLeftRotationEncoderId = 8;
+        public static final int rearRightRotationEncoderId = 9;
 
     }
 
     public static final class InputDevices {
 
-        public static final int gamepadPort = 0;
+        public static final int GAMEPAD_PORT = 0;
 
     }
 
     public static final class DriveConstants {
 
-        public static final double trackWidth = Units.inchesToMeters(16.5);
-        public static final double wheelBase = Units.inchesToMeters(16.5);
-        public static final Translation2d frontLeftTranslation  = new Translation2d(trackWidth / 2.0, wheelBase / 2.0); //front left
-        public static final Translation2d frontRightTranslation = new Translation2d(trackWidth / 2.0, -wheelBase / 2.0);//front right
-        public static final Translation2d rearLeftTranslation   = new Translation2d(-trackWidth / 2.0, wheelBase / 2.0);//rear left
-        public static final Translation2d rearRightTranslation  = new Translation2d(-trackWidth / 2.0, -wheelBase / 2.0);//rear right
-
-        public static final SwerveDriveKinematics kinematics = 
-            new SwerveDriveKinematics(
-                frontLeftTranslation, 
-                frontRightTranslation,
-                rearLeftTranslation,
-                rearRightTranslation
-            );
+        static public final double WHEEL_BASE_WIDTH_M = Units.inchesToMeters(18.25);
+        static public final double WHEEL_RADIUS_M = 0.0508; //Units.inchesToMeters(4.0/2.0); //four inch (diameter) wheels
+        static public final double ROBOT_MASS_kg = Units.lbsToKilograms(140);
+        static public final double ROBOT_MOI_KGM2 = 1.0/12.0 * ROBOT_MASS_kg * Math.pow((WHEEL_BASE_WIDTH_M*1.1),2) * 2; //Model moment of intertia as a square slab slightly bigger than wheelbase with axis through center
+        // Drivetrain Performance Mechanical limits
+        static public final double MAX_FWD_REV_SPEED_MPS = Units.feetToMeters(19.0);
+        static public final double MAX_STRAFE_SPEED_MPS = Units.feetToMeters(19.0);
+        static public final double MAX_ROTATE_SPEED_RAD_PER_SEC = Units.degreesToRadians(720.0);
+        static public final double MAX_TRANSLATE_ACCEL_MPS2 = MAX_FWD_REV_SPEED_MPS/0.25; //0-full time of 0.25 second
+        static public final double MAX_ROTATE_ACCEL_RAD_PER_SEC_2 = MAX_ROTATE_SPEED_RAD_PER_SEC/0.25; //0-full time of 0.25 second
         
-        public static final double driveWheelGearReduction = 6.86;
-        public static final double rotationWheelGearReduction = 12.8;
+    // HELPER ORGANIZATION CONSTANTS
+        static public final int FL = 0; // Front Left Module Index
+        static public final int FR = 1; // Front Right Module Index
+        static public final int BL = 2; // Back Left Module Index
+        static public final int BR = 3; // Back Right Module Index
+        static public final int NUM_MODULES = 4;
 
-        public static final double wheelDiameterMeters = 0.050686 * 2;
+        // Internal objects used to track where the modules are at relative to
+        // the center of the robot, and all the implications that spacing has.
+        static private double HW = WHEEL_BASE_WIDTH_M/2.0;
+        static public final List<Translation2d> robotToModuleTL = Arrays.asList(
+            new Translation2d( HW,  HW), //FL
+            new Translation2d( HW, -HW), //FR
+            new Translation2d(-HW,  HW), //BL
+            new Translation2d(-HW, -HW)  //BR
+        );
+
+        static public final List<Transform2d> robotToModuleTF = Arrays.asList(
+            new Transform2d(robotToModuleTL.get(FL), new Rotation2d(0.0)),
+            new Transform2d(robotToModuleTL.get(FR), new Rotation2d(0.0)),
+            new Transform2d(robotToModuleTL.get(BL), new Rotation2d(0.0)),
+            new Transform2d(robotToModuleTL.get(BR), new Rotation2d(0.0)) 
+        );
+
+        static public final SwerveDriveKinematics m_kinematics = new SwerveDriveKinematics(
+            robotToModuleTL.get(FL), 
+            robotToModuleTL.get(FR), 
+            robotToModuleTL.get(BL), 
+            robotToModuleTL.get(BR)
+        );
+
+        
+        public static final double WHEEL_REVS_PER_ENC_REV = 1.0/5.14;
+        public static final double AZMTH_REVS_PER_ENC_REV = 1.0/12.8;
 
         public static final double rotationMotorMaxSpeedRadPerSec = 1.0;
         public static final double rotationMotorMaxAccelRadPerSecSq = 1.0;
 
-        public static final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.254, 0.137);
+        //kv: (12 volts * 60 s/min * 1/5.14 WRevs/MRevs * wheel rad * 2pi  / (6000 MRPM * 
+        public static final double kv = (12 /(100 * WHEEL_REVS_PER_ENC_REV * WHEEL_RADIUS_M * 2 * Math.PI));
+        public static final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.254, kv);
+        
 
         public static final double maxDriveSpeed = 14.4;
         public static final double teleopTurnRateDegPerSec = 360.0; //Rate the robot will spin with full rotation command
 
-    }
-
-    
-    public static final class VisionConstants {
-
-        public static final double limelightHeightInches = 26.5; // distance from limelight to ground
-        public static final double limelightMountAngleRadians = Units.degreesToRadians(44);
+        static public final int ENC_PULSE_PER_REV = 1;
+        static public final double WHEEL_ENC_COUNTS_PER_WHEEL_REV = ENC_PULSE_PER_REV/ WHEEL_REVS_PER_ENC_REV;  //Assume 1-1 gearing for now
+        static public final double AZMTH_ENC_COUNTS_PER_MODULE_REV = ENC_PULSE_PER_REV / AZMTH_REVS_PER_ENC_REV; //Assume 1-1 gearing for now
+        static public final double WHEEL_ENC_WHEEL_REVS_PER_COUNT  = 1.0/((double)(WHEEL_ENC_COUNTS_PER_WHEEL_REV));
+        static public final double AZMTH_ENC_MODULE_REVS_PER_COUNT = 1.0/((double)(AZMTH_ENC_COUNTS_PER_MODULE_REV));
 
     }
 
@@ -81,11 +113,4 @@ public class Constants {
         public static final double maxAccelMetersPerSecondSq = 1;
         
     }
-
-    public static final class FieldConstants {
-
-        public static final double targetHeightInches = 89.5;
-
-    }
-    
 }

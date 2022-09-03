@@ -40,6 +40,11 @@
         "header": {
           "open": true
         }
+      },
+      "navX-Sensor[0]": {
+        "header": {
+          "open": true
+        }
       }
     }
   },
@@ -59,6 +64,7 @@
       "/LiveWindow/Ungrouped/PIDController[4]": "PIDController",
       "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
       "/LiveWindow/Ungrouped/navX-Sensor[4]": "Gyro",
+      "/Shuffleboard/RobotContainer/drivebaseS": "Subsystem",
       "/SmartDashboard/Field": "Field2d",
       "/SmartDashboard/SendableChooser[0]": "String Chooser"
     },
@@ -75,7 +81,15 @@
           "length": 0.20000000298023224,
           "width": 0.20000000298023224
         },
-        "bottom": 903,
+        "bottom": 206,
+        "cupid": {
+          "arrowSize": 4,
+          "arrowWeight": 0.5,
+          "arrows": false,
+          "length": 14.0,
+          "style": "Line",
+          "weight": 0.0
+        },
         "frontLeft": {
           "length": 0.20000000298023224,
           "width": 0.20000000298023224
@@ -85,12 +99,12 @@
           "style": "Box/Image",
           "width": 0.20000000298023224
         },
-        "height": 8.229599952697754,
-        "image": "C:\\Users\\jashu\\PathWeaver\\Games\\2022 Rapid React\\2022-field.png",
-        "left": 74,
-        "right": 1781,
-        "top": 45,
-        "width": 16.459199905395508,
+        "height": 1.5,
+        "image": "C:\\Users\\jashu\\PathWeaver\\Games\\3mx3m\\FTC_Field_1.png",
+        "left": 206,
+        "right": 423,
+        "top": 12,
+        "width": 1.5,
         "window": {
           "visible": true
         }
@@ -98,11 +112,97 @@
     }
   },
   "NetworkTables": {
+    "LiveWindow": {
+      "DrivebaseS": {
+        "open": true
+      },
+      "Ungrouped": {
+        "open": true
+      }
+    },
+    "Shuffleboard": {
+      "DrivebaseS": {
+        "SwerveModule[12,11]": {
+          "open": true
+        },
+        "SwerveModule[14,13]": {
+          "open": true
+        },
+        "SwerveModule[16,15]": {
+          "open": true
+        },
+        "SwerveModule[18,17]": {
+          "open": true
+        },
+        "open": true
+      }
+    },
     "SmartDashboard": {
-      "Field": {
+      "Shuffleboard": {
+        "DrivebaseS": {
+          "SwerveModule[12,11]": {
+            "open": true
+          },
+          "open": true
+        },
         "open": true
       },
       "open": true
+    }
+  },
+  "Plot": {
+    "Plot <0>": {
+      "plots": [
+        {
+          "axis": [
+            {
+              "autoFit": true
+            }
+          ],
+          "height": 450,
+          "series": [
+            {
+              "color": [
+                0.5058823823928833,
+                0.44705885648727417,
+                0.7019608020782471,
+                1.0
+              ],
+              "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/desiredAngle"
+            },
+            {
+              "color": [
+                0.8666667342185974,
+                0.5176470875740051,
+                0.32156863808631897,
+                1.0
+              ],
+              "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/rotEncoder"
+            }
+          ]
+        }
+      ]
+    },
+    "Plot <1>": {
+      "plots": [
+        {
+          "height": 332,
+          "series": [
+            {
+              "color": [
+                0.8666667342185974,
+                0.5176470875740051,
+                0.32156863808631897,
+                1.0
+              ],
+              "id": "SPARK MAX [7]-Applied Output"
+            }
+          ]
+        }
+      ],
+      "window": {
+        "visible": false
+      }
     }
   }
 }
