@@ -1,10 +1,8 @@
 package frc.robot.util.sim;
 
-import edu.wpi.first.hal.SimDevice;
 import edu.wpi.first.hal.SimDouble;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.simulation.SimDeviceSim;
-import frc.robot.Constants;
 
 public class SimGyroSensorModel{
 

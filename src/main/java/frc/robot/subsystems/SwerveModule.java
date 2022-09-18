@@ -1,32 +1,22 @@
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.sensors.AbsoluteSensorRange;
-import com.ctre.phoenix.sensors.CANCoder;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.REVPhysicsSim;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.SparkMaxPIDController;
 
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import frc.robot.util.sim.DutyCycleEncoderSim;
-import frc.robot.util.sim.SimEncoder;
-import io.github.oblarg.oblog.Loggable;
-import io.github.oblarg.oblog.Logger;
-import io.github.oblarg.oblog.annotations.Log;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.util.sim.DutyCycleEncoderSim;
+import frc.robot.util.sim.SimEncoder;
+import io.github.oblarg.oblog.Loggable;
 
 public class SwerveModule extends SubsystemBase implements Loggable{
 

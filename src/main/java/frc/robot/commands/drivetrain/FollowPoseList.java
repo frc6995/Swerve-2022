@@ -1,8 +1,5 @@
 package frc.robot.commands.drivetrain;
 
-import edu.wpi.first.math.trajectory.Trajectory;
-import edu.wpi.first.wpilibj.Timer;
-
 import java.util.List;
 
 import edu.wpi.first.math.controller.PIDController;

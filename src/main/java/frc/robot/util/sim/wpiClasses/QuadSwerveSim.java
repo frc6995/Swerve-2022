@@ -99,7 +99,7 @@ public class QuadSwerveSim {
             preFricNetForce.accum(mf.getForceInRefFrame(curPose)); //Add up all the forces that friction gets a chance to fight against
         });
 
-        Force2d sidekickForce = new Force2d(0, 0); //TODO - make a generic "external force" input?
+        Force2d sidekickForce = new Force2d(0, 0);
 
         preFricNetForce.accum(sidekickForce);
 

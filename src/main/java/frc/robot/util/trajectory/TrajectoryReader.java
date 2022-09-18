@@ -88,7 +88,7 @@ public class TrajectoryReader {
         return statesList;
     }
 
-    private static Pose2d getPose(int i, List<Pose2d> list) {
+    public static Pose2d getPose(int i, List<Pose2d> list) {
         if (i < 0) {
             return list.get(0);
         } else if (i >= list.size()) {

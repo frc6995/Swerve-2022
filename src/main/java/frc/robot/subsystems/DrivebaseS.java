@@ -1,16 +1,30 @@
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.sensors.PigeonIMU;
-import com.kauailabs.navx.frc.AHRS;
-import com.revrobotics.REVPhysicsSim;
+import static frc.robot.Constants.DriveConstants.AZMTH_ENC_COUNTS_PER_MODULE_REV;
+import static frc.robot.Constants.DriveConstants.AZMTH_REVS_PER_ENC_REV;
+import static frc.robot.Constants.DriveConstants.BL;
+import static frc.robot.Constants.DriveConstants.BR;
+import static frc.robot.Constants.DriveConstants.FL;
+import static frc.robot.Constants.DriveConstants.FR;
+import static frc.robot.Constants.DriveConstants.NUM_MODULES;
+import static frc.robot.Constants.DriveConstants.ROBOT_MASS_kg;
+import static frc.robot.Constants.DriveConstants.ROBOT_MOI_KGM2;
+import static frc.robot.Constants.DriveConstants.WHEEL_BASE_WIDTH_M;
+import static frc.robot.Constants.DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV;
+import static frc.robot.Constants.DriveConstants.WHEEL_RADIUS_M;
+import static frc.robot.Constants.DriveConstants.WHEEL_REVS_PER_ENC_REV;
+import static frc.robot.Constants.DriveConstants.m_kinematics;
+import static frc.robot.Constants.DriveConstants.robotToModuleTL;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.List;
+
+import com.kauailabs.navx.frc.AHRS;
+
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -19,16 +33,9 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.CANDevices;
-import static frc.robot.Constants.DriveConstants.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import frc.robot.util.NomadMathUtil;
 import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
@@ -162,7 +169,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public void driveRotationVolts(int module, double volts) {
         modules.get(module).driveRotationVolts(volts);
     }
-    
+
     @Override
     public void periodic() {
 

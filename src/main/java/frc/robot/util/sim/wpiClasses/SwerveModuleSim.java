@@ -13,8 +13,7 @@ public class SwerveModuleSim {
     private final double wheelEncGearRatio;      //Motor-to-wheel-encoder reduction
     private final double treadStaticFricForce;
     private final double treadKineticFricForce;
-    private final double wheelGearboxLossFactor = 0.01; //TODO - make the "how much grease" factor configurable?
-
+    private final double wheelGearboxLossFactor = 0.01;
     Pose2d prevModulePose = null;
     Pose2d curModulePose  = null;
     double curLinearSpeed_mps = 0; //Positive = in curAngle_deg, Negative = opposite of curAngle_deg

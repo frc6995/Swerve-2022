@@ -47,7 +47,6 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledPeriodic() {
-        // TODO Auto-generated method stub
         super.disabledPeriodic();
         CommandScheduler.getInstance().cancelAll();
     }

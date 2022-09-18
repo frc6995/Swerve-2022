@@ -1,6 +1,9 @@
 package frc.robot.auto;
 
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import static frc.robot.util.NomadMathUtil.getDirection;
+
+import java.util.List;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -9,14 +12,7 @@ import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.trajectory.constraint.CentripetalAccelerationConstraint;
-import edu.wpi.first.math.trajectory.constraint.DifferentialDriveKinematicsConstraint;
-import edu.wpi.first.math.trajectory.constraint.DifferentialDriveVoltageConstraint;
 import edu.wpi.first.math.util.Units;
-import frc.robot.Constants;
-
-import static frc.robot.util.NomadMathUtil.*;
-
-import java.util.List;
 
 public class Trajectories {
 
