@@ -29,6 +29,7 @@ import static frc.robot.Constants.DriveConstants.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import frc.robot.util.NomadMathUtil;
 import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
 import frc.robot.util.sim.wpiClasses.SwerveModuleSim;
@@ -46,9 +47,9 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
      * 180 degrees added to offset values to invert one side of the robot so that it doesn't spin in place
      */
     private static final double frontLeftAngleOffset =5.708331;
-    private static final double frontRightAngleOffset = -0.638995 + Math.PI;
+    private static final double frontRightAngleOffset = 3.783; //11,12
     private static final double rearLeftAngleOffset = 1.787997;
-    private static final double rearRightAngleOffset = 2.513654 + Math.PI;
+    private static final double rearRightAngleOffset = 5.66;
 
     /**
      * SwerveModule objects
@@ -145,10 +146,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         navx.reset();
 
         // initialize the rotation offsets for the CANCoders
-        frontLeft.initRotationOffset();
-        frontRight.initRotationOffset();
-        rearLeft.initRotationOffset();
-        rearRight.initRotationOffset();
 
         // reset the measured distance driven for each module
         frontLeft.resetDistance();
@@ -165,6 +162,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public void driveRotationVolts(int module, double volts) {
         modules.get(module).driveRotationVolts(volts);
     }
+    
     @Override
     public void periodic() {
 
@@ -193,7 +191,11 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         } else {
             // make sure the wheels don't try to spin faster than the maximum speed possible
             states = m_kinematics.toSwerveModuleStates(speeds);
-            SwerveDriveKinematics.desaturateWheelSpeeds(states, maxDriveSpeed);
+            NomadMathUtil.normalizeDrive(states, speeds,
+                Constants.DriveConstants.MAX_FWD_REV_SPEED_MPS,
+                Constants.DriveConstants.MAX_ROTATE_SPEED_RAD_PER_SEC,
+                Constants.DriveConstants.MAX_MODULE_SPEED_FPS);
+            //SwerveDriveKinematics.desaturateWheelSpeeds(states, maxDriveSpeed);
         } 
 
         setModuleStates(states);
@@ -422,9 +424,14 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
     static SwerveModule swerveModuleFactory(int driveMotorId, int rotationMotorId, int magEncoderId, double measuredOffsetRadians) {
         SwerveModule module = new SwerveModule(driveMotorId, rotationMotorId, magEncoderId, measuredOffsetRadians);
-        module.initRotationOffset();
         module.resetDistance();
         return module;
     }
 
+    public void resetRelativeRotationEncoders() {
+        frontLeft.initRotationOffset();
+        frontRight.initRotationOffset();
+        rearLeft.initRotationOffset();
+        rearRight.initRotationOffset();
+    }
 }

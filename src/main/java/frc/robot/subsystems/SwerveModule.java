@@ -41,7 +41,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
     private static final double rotationkP = 0.2;
     private static final double rotationkD = 0.5;
 
-    private static final double drivekP = 0.01;
+    private static final double drivekP = 0.00;
 
     private final CANSparkMax driveMotor;
     private final CANSparkMax rotationMotor;
@@ -77,14 +77,15 @@ public class SwerveModule extends SubsystemBase implements Loggable{
     ) {
         driveMotor = new CANSparkMax(driveMotorId, MotorType.kBrushless);
         rotationMotor = new CANSparkMax(rotationMotorId, MotorType.kBrushless);
-        driveMotor.restoreFactoryDefaults(true);
-        rotationMotor.restoreFactoryDefaults(true);
+        driveMotor.restoreFactoryDefaults(false);
+        rotationMotor.restoreFactoryDefaults(false);
         driveEncoder = driveMotor.getEncoder();
         rotationEncoder = rotationMotor.getEncoder();
 
         driveEncoderSim = new SimEncoder();
         rotationEncoderSim = new SimEncoder();
 
+        rotationEncoder.setPositionConversionFactor(2.0 * Math.PI * DriveConstants.AZMTH_REVS_PER_ENC_REV);
         //Config the mag encoder, which is directly on the module rotation shaft.
 
         magEncoder = new DutyCycleEncoder(magEncoderId);
@@ -94,8 +95,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         // The magnet in the module is not aligned straight down the direction the wheel points, but it is fixed in place.
         // This means we can subtract a fixed position offset from the encoder reading,
         // I.E. if the module is at 0 but the magnet points at 30 degrees, we can subtract 30 degrees from all readings
-        magEncoder.setPositionOffset(measuredOffsetRadians/(2*Math.PI));
-
+        //magEncoder.setPositionOffset(measuredOffsetRadians/(2*Math.PI));
+        
         //Allows us to set what the mag encoder reads in sim.
         magEncoderSim = new DutyCycleEncoderSim(magEncoder);
 
@@ -141,7 +142,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
         //set the output of the rotation encoder to be in radians
         // (2pi rad/(module rotation)) / 12.8 (motor rots/module rots)
-        rotationEncoder.setPositionConversionFactor(2.0 * Math.PI * DriveConstants.AZMTH_REVS_PER_ENC_REV);
+
         loggingName = "SwerveModule[" + driveMotor.getDeviceId() + ',' + rotationMotor.getDeviceId() + ']';
     }
 
@@ -249,7 +250,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
         // Save the desired state for reference (Simulation assumes the modules always are at the desired state)
         
-        desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
+        //desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
         this.desiredState = desiredState;
 
         if(RobotBase.isReal()) {
@@ -263,14 +264,14 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         driveController.setReference(
             this.desiredState.speedMetersPerSecond, 
             ControlType.kVelocity,
-            0, 
-            DriveConstants.driveFF.calculate(this.desiredState.speedMetersPerSecond)
+            0,
+            DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond)
         );
 
         }
         else {
             rotationMotor.setVoltage(rotationkP * 10 * this.desiredState.angle.minus(getCanEncoderAngle()).getRadians());
-            driveMotor.setVoltage(DriveConstants.driveFF.calculate(this.desiredState.speedMetersPerSecond));
+            driveMotor.setVoltage(DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond));
         }
     }
 

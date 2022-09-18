@@ -11,7 +11,8 @@
           "decKey": 87,
           "decayRate": 1.0,
           "incKey": 83,
-          "keyRate": 1.0
+          "keyRate": 1.0,
+          "maxAbsValue": 0.25
         },
         {
           "decKey": 68,
@@ -29,7 +30,7 @@
         {
           "decKey": 74,
           "incKey": 76,
-          "maxAbsValue": 0.75
+          "maxAbsValue": 0.25
         }
       ],
       "axisCount": 5,

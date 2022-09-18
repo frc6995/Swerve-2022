@@ -57,11 +57,11 @@ public class OperatorControlC extends CommandBase {
 
         double fwdX = forwardX.getAsDouble();
         fwdX = Math.copySign(fwdX, fwdX);
-        fwdX = deadbandInputs(fwdX) * Units.feetToMeters(DriveConstants.maxDriveSpeed);
+        fwdX = deadbandInputs(fwdX) * Units.feetToMeters(DriveConstants.MAX_MODULE_SPEED_FPS);
 
         double fwdY = forwardY.getAsDouble();
         fwdY = Math.copySign(fwdY, fwdY);
-        fwdY = deadbandInputs(fwdY) * Units.feetToMeters(DriveConstants.maxDriveSpeed);
+        fwdY = deadbandInputs(fwdY) * Units.feetToMeters(DriveConstants.MAX_MODULE_SPEED_FPS);
 
         double rot = rotation.getAsDouble();
         //rot = Math.copySign(rot * rot, rot);

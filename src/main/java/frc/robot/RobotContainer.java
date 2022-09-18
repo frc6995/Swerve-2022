@@ -95,4 +95,7 @@ public class RobotContainer {
         drivebaseS.drawRobotOnField(field);
     }
 
+    public void onEnabled(){
+        drivebaseS.resetRelativeRotationEncoders();
+    }
 }

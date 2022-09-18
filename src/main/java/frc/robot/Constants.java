@@ -91,13 +91,15 @@ public class Constants {
         public static final double rotationMotorMaxSpeedRadPerSec = 1.0;
         public static final double rotationMotorMaxAccelRadPerSecSq = 1.0;
 
-        //kv: (12 volts * 60 s/min * 1/5.14 WRevs/MRevs * wheel rad * 2pi  / (6000 MRPM * 
-        public static final double kv = (12 /(100 * WHEEL_REVS_PER_ENC_REV * WHEEL_RADIUS_M * 2 * Math.PI));
-        public static final SimpleMotorFeedforward driveFF = new SimpleMotorFeedforward(0.254, kv);
+        //kv: (12 volts * 60 s/min * 1/5.14 WRevs/MRevs * wheel rad * 2pi  / (6000 MRPM *
+        /** ks, kv, ka */ 
+        public static final double[] DRIVE_FF = {0.11452, 1.9844, 0.31123};
+
+        public static final SimpleMotorFeedforward driveFeedForward = new SimpleMotorFeedforward(DRIVE_FF[0], DRIVE_FF[1], DRIVE_FF[2]);
         
 
-        public static final double maxDriveSpeed = 14.4;
-        public static final double teleopTurnRateDegPerSec = 360.0; //Rate the robot will spin with full rotation command
+        public static final double MAX_MODULE_SPEED_FPS = 2;
+        public static final double teleopTurnRateDegPerSec = 45; //Rate the robot will spin with full rotation command
 
         static public final int ENC_PULSE_PER_REV = 1;
         static public final double WHEEL_ENC_COUNTS_PER_WHEEL_REV = ENC_PULSE_PER_REV/ WHEEL_REVS_PER_ENC_REV;  //Assume 1-1 gearing for now
