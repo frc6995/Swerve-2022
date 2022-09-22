@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.kauailabs.navx.frc.AHRS;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -202,7 +203,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
                 Constants.DriveConstants.MAX_FWD_REV_SPEED_MPS,
                 Constants.DriveConstants.MAX_ROTATE_SPEED_RAD_PER_SEC,
                 Constants.DriveConstants.MAX_MODULE_SPEED_FPS);
-            //SwerveDriveKinematics.desaturateWheelSpeeds(states, maxDriveSpeed);
         } 
 
         setModuleStates(states);
@@ -250,7 +250,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     private SwerveModuleState[] getStoppedStates() {
         SwerveModuleState[] states = new SwerveModuleState[4];
         for (int i = 0; i < NUM_MODULES; i++) {
-            states[i] = new SwerveModuleState(0,modules.get(i).getCanEncoderAngle());
+            states[i] = new SwerveModuleState(0,new Rotation2d(MathUtil.angleModulus(modules.get(i).getCanEncoderAngle().getRadians())));
         }
 
         return states;

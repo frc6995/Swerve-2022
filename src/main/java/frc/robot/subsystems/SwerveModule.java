@@ -7,6 +7,7 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
@@ -240,7 +241,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
         // Save the desired state for reference (Simulation assumes the modules always are at the desired state)
         
-        //desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
+        desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
         this.desiredState = desiredState;
 
         if(RobotBase.isReal()) {
@@ -260,14 +261,14 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
         }
         else {
-            rotationMotor.setVoltage(rotationkP * 10 * this.desiredState.angle.minus(getCanEncoderAngle()).getRadians());
-            driveMotor.setVoltage(DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond));
+            rotationMotor.setVoltage(rotationkP * 50 * this.desiredState.angle.minus(getCanEncoderAngle()).getRadians());
+            driveMotor.setVoltage(DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond) * 1.44 );
         }
     }
 
     public void periodic() {
         SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/magEncoder", getMagEncoderAngle().getRadians());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/rotEncoder", getCanEncoderAngle().getRadians());
+        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/rotEncoder",  MathUtil.angleModulus(getCanEncoderAngle().getRadians()));
         SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/driveEncoder", getDriveDistanceMeters());
         SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/driveVelocity", getCurrentVelocityMetersPerSecond());
         SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/desiredAngle", this.desiredState.angle.getRadians());
@@ -290,11 +291,11 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * Set the state of the module as specified by the simulator
      * @param angle_rad
      * @param wheelPos_m
-     * @param wheelVel_m
+     * @param wheelVel_mps
      */
-    public void setSimState(double angle_rad, double wheelPos_m, double wheelVel_m) {
+    public void setSimState(double angle_rad, double wheelPos_m, double wheelVel_mps) {
         rotationEncoderSim.setPosition(angle_rad);
         driveEncoderSim.setPosition(wheelPos_m);
-        driveEncoderSim.setPosition(wheelVel_m);
+        driveEncoderSim.setVelocity(wheelVel_mps);
     }
 }
