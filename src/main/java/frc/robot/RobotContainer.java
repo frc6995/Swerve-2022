@@ -51,14 +51,14 @@ public class RobotContainer {
         List<Pose2d> poseList =
             TrajectoryReader.readFilePoseList(trajectoryFile);
         
-        autoSelector.setDefaultOption("mid to ring", 
-            new InstantCommand(
-                ()->drivebaseS.resetPose(poseList.get(0)))
-            .andThen(
-                new RepeatCommand(new FollowPoseList(
-                    TrajectoryReader.readFileTrajectory(trajectoryFile), drivebaseS))
-            )
-            );
+        // autoSelector.setDefaultOption("mid to ring", 
+        //     new InstantCommand(
+        //         ()->drivebaseS.resetPose(poseList.get(0)))
+        //     .andThen(
+        //         new RepeatCommand(new FollowPoseList(
+        //             TrajectoryReader.readFileTrajectory(trajectoryFile), drivebaseS))
+        //     )
+        //     );
 
         
         field.getObject("cupid").setPoses(poseList);

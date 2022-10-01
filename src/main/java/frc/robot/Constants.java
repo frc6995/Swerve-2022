@@ -98,8 +98,8 @@ public class Constants {
         public static final SimpleMotorFeedforward driveFeedForward = new SimpleMotorFeedforward(DRIVE_FF[0], DRIVE_FF[1], DRIVE_FF[2]);
         
 
-        public static final double MAX_MODULE_SPEED_FPS = 10;
-        public static final double teleopTurnRateDegPerSec = 45; //Rate the robot will spin with full rotation command
+        public static final double MAX_MODULE_SPEED_FPS = 4;
+        public static final double teleopTurnRateDegPerSec = 180; //Rate the robot will spin with full rotation command
 
         static public final int ENC_PULSE_PER_REV = 1;
         static public final double WHEEL_ENC_COUNTS_PER_WHEEL_REV = ENC_PULSE_PER_REV/ WHEEL_REVS_PER_ENC_REV;  //Assume 1-1 gearing for now

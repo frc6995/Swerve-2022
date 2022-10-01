@@ -52,6 +52,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
     private final DutyCycleEncoder magEncoder;
     private final DutyCycleEncoderSim magEncoderSim;
+    private final double magEncoderOffset;
 
     //absolute offset for the CANCoder so that the wheels can be aligned when the robot is turned on
 
@@ -82,7 +83,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         magEncoder = new DutyCycleEncoder(magEncoderId);
         //magEncoder.setDistancePerRotation(2*Math.PI);
         magEncoder.setDutyCycleRange(1.0/4098.0, 4096.0/4098.0); //min and max pulse width from the mag encoder datasheet
-
+        magEncoderOffset = measuredOffsetRadians;
+        //magEncoder.setPositionOffset(measuredOffsetRadians/(2*Math.PI));
         // The magnet in the module is not aligned straight down the direction the wheel points, but it is fixed in place.
         // This means we can subtract a fixed position offset from the encoder reading,
         // I.E. if the module is at 0 but the magnet points at 30 degrees, we can subtract 30 degrees from all readings
@@ -175,7 +177,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      */
     public Rotation2d getMagEncoderAngle() {
 
-        double unsignedAngle = magEncoder.getAbsolutePosition() * 2*Math.PI;
+        double unsignedAngle = magEncoder.getAbsolutePosition() * 2*Math.PI - magEncoderOffset;
 
         return new Rotation2d(unsignedAngle);
 
@@ -245,9 +247,20 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         this.desiredState = desiredState;
 
         if(RobotBase.isReal()) {
+            double goal = this.desiredState.angle.getRadians();
+            double measurement = getCanEncoderAngle().getRadians();
+            double errorBound = (Math.PI - (-Math.PI)) / 2.0;
+            double goalMinDistance =
+                MathUtil.inputModulus( goal - measurement, -errorBound, errorBound);
+        
+            // Recompute the profile goal with the smallest error, thus giving the shortest path. The goal
+            // may be outside the input range after this operation, but that's OK because the controller
+            // will still go there and report an error of zero. In other words, the setpoint only needs to
+            // be offset from the measurement by the input range modulus; they don't need to be equal.
+            goal = goalMinDistance + measurement;
             // Feed the angle to the on-MAX rotation position PID
         rotationController.setReference(
-            this.desiredState.angle.getRadians(),
+            goal,
             ControlType.kPosition
         );
 

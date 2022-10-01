@@ -32,6 +32,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -42,6 +43,7 @@ import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
 import frc.robot.util.sim.wpiClasses.SwerveModuleSim;
 import io.github.oblarg.oblog.Loggable;
+import io.github.oblarg.oblog.annotations.Log;
 
 public class DrivebaseS extends SubsystemBase implements Loggable {
 
@@ -107,7 +109,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
     private boolean isCommandedFieldRelative = false;
 
-    private final AHRS navx = new AHRS();
+    private final AHRS navx = new AHRS(Port.kMXP);
     private SimGyroSensorModel simNavx = new SimGyroSensorModel();
 
     public final ProfiledPIDController rotationController = 
@@ -152,7 +154,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public DrivebaseS() {
 
         navx.reset();
-
+        
         // initialize the rotation offsets for the CANCoders
 
         // reset the measured distance driven for each module
@@ -164,7 +166,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         // Allow the robot rotation controller to treat crossing over the rollover point as a valid way to move
         // this is useful because if we want to go from 179 to -179 degrees, it's really a 2-degree move, not 358 degrees
         rotationController.enableContinuousInput(-Math.PI, Math.PI);
-
+        resetPose(new Pose2d());
     }
 
     public void driveRotationVolts(int module, double volts) {
@@ -199,10 +201,10 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         } else {
             // make sure the wheels don't try to spin faster than the maximum speed possible
             states = m_kinematics.toSwerveModuleStates(speeds);
-            NomadMathUtil.normalizeDrive(states, speeds,
-                Constants.DriveConstants.MAX_FWD_REV_SPEED_MPS,
-                Constants.DriveConstants.MAX_ROTATE_SPEED_RAD_PER_SEC,
-                Constants.DriveConstants.MAX_MODULE_SPEED_FPS);
+            // NomadMathUtil.normalizeDrive(states, speeds,
+            //     Constants.DriveConstants.MAX_FWD_REV_SPEED_MPS,
+            //     Constants.DriveConstants.MAX_ROTATE_SPEED_RAD_PER_SEC,
+            //     Constants.DriveConstants.MAX_MODULE_SPEED_FPS);
         } 
 
         setModuleStates(states);
