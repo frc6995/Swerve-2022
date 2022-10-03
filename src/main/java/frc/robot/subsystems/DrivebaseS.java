@@ -194,9 +194,9 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
         // If we are stopped (no wheel velocity commanded) then any number of wheel angles could be valid.
         // By default it would point all modules forward when stopped. Here, we override this.
-        if(Math.abs(speeds.vxMetersPerSecond) < 0.05 
-            && Math.abs(speeds.vyMetersPerSecond) < 0.05
-            && Math.abs(speeds.omegaRadiansPerSecond) < 0.05) {
+        if(Math.abs(speeds.vxMetersPerSecond) < 0.01
+            && Math.abs(speeds.vyMetersPerSecond) < 0.01
+            && Math.abs(speeds.omegaRadiansPerSecond) < 0.01) {
                 states = getStoppedStates();
         } else {
             // make sure the wheels don't try to spin faster than the maximum speed possible

@@ -246,18 +246,19 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
         this.desiredState = desiredState;
 
+        double goal = this.desiredState.angle.getRadians();
+        double measurement = getCanEncoderAngle().getRadians();
+        double errorBound = (Math.PI - (-Math.PI)) / 2.0;
+        double goalMinDistance =
+            MathUtil.inputModulus( goal - measurement, -errorBound, errorBound);
+    
+        // Recompute the profile goal with the smallest error, thus giving the shortest path. The goal
+        // may be outside the input range after this operation, but that's OK because the controller
+        // will still go there and report an error of zero. In other words, the setpoint only needs to
+        // be offset from the measurement by the input range modulus; they don't need to be equal.
+        goal = goalMinDistance + measurement;
         if(RobotBase.isReal()) {
-            double goal = this.desiredState.angle.getRadians();
-            double measurement = getCanEncoderAngle().getRadians();
-            double errorBound = (Math.PI - (-Math.PI)) / 2.0;
-            double goalMinDistance =
-                MathUtil.inputModulus( goal - measurement, -errorBound, errorBound);
-        
-            // Recompute the profile goal with the smallest error, thus giving the shortest path. The goal
-            // may be outside the input range after this operation, but that's OK because the controller
-            // will still go there and report an error of zero. In other words, the setpoint only needs to
-            // be offset from the measurement by the input range modulus; they don't need to be equal.
-            goal = goalMinDistance + measurement;
+           
             // Feed the angle to the on-MAX rotation position PID
         rotationController.setReference(
             goal,
@@ -274,7 +275,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
         }
         else {
-            rotationMotor.setVoltage(rotationkP * 50 * this.desiredState.angle.minus(getCanEncoderAngle()).getRadians());
+            
+            rotationMotor.setVoltage(rotationkP * 25 * goalMinDistance);
             driveMotor.setVoltage(DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond) * 1.44 );
         }
     }

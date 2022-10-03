@@ -1,14 +1,23 @@
 {
+  "Keyboard 0 Settings": {
+    "window": {
+      "visible": true
+    }
+  },
   "keyboardJoysticks": [
     {
       "axisConfig": [
         {
           "decKey": 65,
-          "incKey": 68
+          "decayRate": 1.0,
+          "incKey": 68,
+          "keyRate": 1.0
         },
         {
           "decKey": 87,
-          "incKey": 83
+          "decayRate": 1.0,
+          "incKey": 83,
+          "keyRate": 1.0
         },
         {
           "decKey": 69,
@@ -87,6 +96,11 @@
       "axisCount": 0,
       "buttonCount": 0,
       "povCount": 0
+    }
+  ],
+  "robotJoysticks": [
+    {
+      "guid": "Keyboard0"
     }
   ]
 }
