@@ -104,12 +104,12 @@
           "style": "Box/Image",
           "width": 0.20000000298023224
         },
-        "height": 1.5,
+        "height": 1.2192000150680542,
         "image": "C:\\Users\\jashu\\PathWeaver\\Games\\3mx3m\\FTC_Field_1.png",
         "left": 206,
         "right": 423,
         "top": 12,
-        "width": 1.5,
+        "width": 1.2192000150680542,
         "window": {
           "visible": true
         }
@@ -162,6 +162,11 @@
     "Plot <0>": {
       "plots": [
         {
+          "axis": [
+            {
+              "autoFit": true
+            }
+          ],
           "height": 651,
           "series": [
             {
@@ -181,24 +186,6 @@
                 1.0
               ],
               "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/driveVelocity"
-            },
-            {
-              "color": [
-                0.5058823823928833,
-                0.44705885648727417,
-                0.7019608020782471,
-                1.0
-              ],
-              "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/desiredAngle"
-            },
-            {
-              "color": [
-                0.7686275243759155,
-                0.30588236451148987,
-                0.32156863808631897,
-                1.0
-              ],
-              "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/rotEncoder"
             }
           ]
         }

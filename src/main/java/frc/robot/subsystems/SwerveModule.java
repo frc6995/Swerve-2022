@@ -244,6 +244,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         // Save the desired state for reference (Simulation assumes the modules always are at the desired state)
         
         desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
+        SwerveModuleState previousState = this.desiredState;
         this.desiredState = desiredState;
 
         double goal = this.desiredState.angle.getRadians();
@@ -270,14 +271,16 @@ public class SwerveModule extends SubsystemBase implements Loggable{
             this.desiredState.speedMetersPerSecond, 
             ControlType.kVelocity,
             0,
-            DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond)
+            DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond,
+            (this.desiredState.speedMetersPerSecond - previousState.speedMetersPerSecond) / 0.02)
         );
 
         }
         else {
             
             rotationMotor.setVoltage(rotationkP * 25 * goalMinDistance);
-            driveMotor.setVoltage(DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond) * 1.44 );
+            driveMotor.setVoltage(DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond,
+            (this.desiredState.speedMetersPerSecond - previousState.speedMetersPerSecond) / 0.02) * 12.0/10 * 12.0/10);
         }
     }
 

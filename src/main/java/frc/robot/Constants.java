@@ -98,7 +98,7 @@ public class Constants {
         public static final SimpleMotorFeedforward driveFeedForward = new SimpleMotorFeedforward(DRIVE_FF[0], DRIVE_FF[1], DRIVE_FF[2]);
         
 
-        public static final double MAX_MODULE_SPEED_FPS = 8;
+        public static final double MAX_MODULE_SPEED_FPS = 19;
         public static final double teleopTurnRateDegPerSec = 180; //Rate the robot will spin with full rotation command
 
         static public final int ENC_PULSE_PER_REV = 1;

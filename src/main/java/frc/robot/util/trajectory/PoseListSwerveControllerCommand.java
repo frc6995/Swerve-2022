@@ -6,7 +6,7 @@ package frc.robot.util.trajectory;
 
 import static edu.wpi.first.wpilibj.util.ErrorMessages.requireNonNullParam;
 
-import java.util.List;
+import java.util.Hashtable;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -37,7 +37,7 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 @SuppressWarnings("MemberName")
 public class PoseListSwerveControllerCommand extends CommandBase {
   private final Timer m_timer = new Timer();
-  private final List<TrajectoryReader.State> m_trajectory;
+  private final Hashtable<Integer,TrajectoryReader.State> m_trajectory;
   private final Supplier<Pose2d> m_pose;
   private final PIDController m_xController;
   private final PIDController m_yController;
@@ -66,7 +66,7 @@ public class PoseListSwerveControllerCommand extends CommandBase {
    */
   @SuppressWarnings("ParameterName")
   public PoseListSwerveControllerCommand(
-      List<TrajectoryReader.State> trajectory,
+      Hashtable<Integer,TrajectoryReader.State> trajectory,
       Supplier<Pose2d> pose,
       PIDController xController,
       PIDController yController,

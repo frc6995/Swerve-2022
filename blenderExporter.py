@@ -2,14 +2,6 @@ import bpy
 import csv
 from itertools import chain
 
-def accel(curve, t):
-    h = 1
-    return (curve.evaluate(t + h) - curve.evaluate(t) * 2 + curve.evaluate(t - h)) / (h * h)
-
-def vel(curve, t):
-    h = 1
-    return (curve.evaluate(t + h) - curve.evaluate(t - h)) / (2*h)
-
 with open(r"C:\Users\jashu\git\Swerve-2022\src\main\deploy\trajectories\R1.csv",'w', newline='', encoding='utf-8') as file:
     csv_writer = csv.writer(file, dialect='excel')
 
@@ -18,18 +10,17 @@ with open(r"C:\Users\jashu\git\Swerve-2022\src\main\deploy\trajectories\R1.csv",
 
     for frame in range(scene.frame_start, scene.frame_end + 1):
         scene.frame_set(frame)
+        root = bpy.data.objects['Root']
+        root_r = root.rotation_euler[2]
         for ob in scene.objects:
-            if "Cube" in ob.name:
-                x_curve = ob.animation_data.action.fcurves[0]
-                y_curve = ob.animation_data.action.fcurves[1]
-                rot_curve = ob.animation_data.action.fcurves[5]
+            if "Empty" in ob.name:
+
                 
-                x = x_curve.evaluate(frame)
-                vx = vel(x_curve, frame)
-                y = y_curve.evaluate(frame)
-                vy = vel(y_curve, frame)
-                r = rot_curve.evaluate(frame)
-                vr = vel(rot_curve, frame)
-                csv_writer.writerow(tuple((x, vx, y, vy, r, vr)))
+                x = ob.matrix_world[0][3]
+                
+                y = ob.matrix_world[1][3]
+                
+                r = ob.rotation_euler[2] + root_r
+                csv_writer.writerow(tuple((x, y, r)))
 
     scene.frame_set(frame_current)

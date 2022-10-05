@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -35,9 +36,9 @@ public class TrajectoryReader {
                     new Pose2d(
                         new Translation2d(
                             Double.parseDouble(tokens[0]),
-                            Double.parseDouble(tokens[2])),
+                            Double.parseDouble(tokens[1])),
                         new Rotation2d(
-                            Double.parseDouble(tokens[4])
+                            Double.parseDouble(tokens[2])
                         )
                     )
                 );
@@ -51,8 +52,10 @@ public class TrajectoryReader {
         return poseList;
     }
 
-    public static List<State> readFileTrajectory(File file) {
-        List<State> statesList = new ArrayList<>();
+    public static Hashtable<Integer, State> readFileTrajectory(File file) {
+
+        Hashtable<Integer, State> statesList = new Hashtable<>();
+
         int time = 0;
         try(BufferedReader fileReader
         = new BufferedReader(new FileReader(file)))
@@ -64,25 +67,50 @@ public class TrajectoryReader {
             {
                 //Get all tokens available in line
                 String[] tokens = line.split(",");
-                statesList.add(time, new TrajectoryReader.State(
+                statesList.put(time, new TrajectoryReader.State(
                     time,
                     new Pose2d(
                         new Translation2d(
                             Double.parseDouble(tokens[0]),
-                            Double.parseDouble(tokens[2])),
+                            Double.parseDouble(tokens[1])),
                         new Rotation2d(
-                            Double.parseDouble(tokens[4])
+                            Double.parseDouble(tokens[2])
                         )
                     ),
-                    Double.parseDouble(tokens[1]) * 50,
-                    Double.parseDouble(tokens[3]) * 50,
-                    Double.parseDouble(tokens[5]) * 50
+                    0,
+                    0,
+                    0
                 ));
                 time += 1;
             }
+            fileReader.close();
         }
         catch (IOException e) {
             e.printStackTrace();
+        }
+        // trapezoidal integration for velocity
+        for(int i = 0; i < time; i++) {
+            State currState = getState(i, statesList);
+            State prevState = getState(i-1, statesList);
+            State nextState = getState(i+1, statesList);
+            currState.omegaRadiansPerSecond = 
+                (
+                    nextState.poseMeters.getRotation().getRadians()
+                - prevState.poseMeters.getRotation().getRadians()
+                ) / 0.04; //dt = 0.04 s
+
+            currState.vxMetersPerSecond = 
+                (
+                    nextState.poseMeters.getX()
+                - prevState.poseMeters.getX()
+                ) / 0.04; //dt = 0.04 s
+            
+                currState.vyMetersPerSecond = 
+                (
+                    nextState.poseMeters.getY()
+                - prevState.poseMeters.getY()
+                ) / 0.04; //dt = 0.04 s
+
         }
 
         return statesList;
@@ -98,12 +126,22 @@ public class TrajectoryReader {
         }
     }
 
+    public static State getState(int i, Hashtable<Integer, State> list) {
+        if (i < 0) {
+            return list.get(0);
+        } else if (i >= list.size()) {
+            return list.get(list.size()-1);
+        } else {
+            return list.get(i);
+        }
+    }
+
     public static class State {
-        public final double time;
-        public final Pose2d poseMeters;
-        public final double vxMetersPerSecond;
-        public final double vyMetersPerSecond;
-        public final double omegaRadiansPerSecond;
+        double time;
+        Pose2d poseMeters;
+        double vxMetersPerSecond;
+        double vyMetersPerSecond;
+        double omegaRadiansPerSecond;
 
         public State(double time, Pose2d poseMeters, double vxMetersPerSecond, double vyMetersPerSecond,
                 double omegaRadiansPerSecond) {

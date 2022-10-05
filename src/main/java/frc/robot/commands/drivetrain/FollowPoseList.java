@@ -1,5 +1,6 @@
 package frc.robot.commands.drivetrain;
 
+import java.util.Hashtable;
 import java.util.List;
 
 import edu.wpi.first.math.controller.PIDController;
@@ -13,7 +14,7 @@ public class FollowPoseList extends PoseListSwerveControllerCommand {
      * Command to follow a given Trajectory using the SwerveControllerCommand class, which in turn uses HolonomicDriveController
      */
 
-    public FollowPoseList(List<TrajectoryReader.State> trajectory, DrivebaseS drive) {
+    public FollowPoseList(Hashtable<Integer,TrajectoryReader.State> trajectory, DrivebaseS drive) {
 
         /**
          * Super constructor for SwerveControllerCommand
@@ -30,8 +31,8 @@ public class FollowPoseList extends PoseListSwerveControllerCommand {
         super(
             trajectory, 
             drive::getPose,
-            new PIDController(2, 0, 0),
-            new PIDController(2, 0, 0), 
+            new PIDController(3, 0, 0),
+            new PIDController(3, 0, 0), 
             drive.rotationController,
             drive::drive, 
             drive
