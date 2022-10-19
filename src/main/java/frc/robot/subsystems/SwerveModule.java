@@ -18,6 +18,7 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.util.sim.DutyCycleEncoderSim;
 import frc.robot.util.sim.SimEncoder;
 import io.github.oblarg.oblog.Loggable;
+import io.github.oblarg.oblog.annotations.Log;
 
 public class SwerveModule extends SubsystemBase implements Loggable{
 
@@ -52,6 +53,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
     private final DutyCycleEncoder magEncoder;
     private final DutyCycleEncoderSim magEncoderSim;
+    @Log
     private final double magEncoderOffset;
 
     //absolute offset for the CANCoder so that the wheels can be aligned when the robot is turned on
@@ -65,7 +67,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         int driveMotorId, 
         int rotationMotorId,
         int magEncoderId,
-        double measuredOffsetRadians
+        double measuredOffsetRadians,
+        String name
     ) {
         driveMotor = new CANSparkMax(driveMotorId, MotorType.kBrushless);
         rotationMotor = new CANSparkMax(rotationMotorId, MotorType.kBrushless);
@@ -136,11 +139,13 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         //set the output of the rotation encoder to be in radians
         // (2pi rad/(module rotation)) / 12.8 (motor rots/module rots)
 
-        loggingName = "SwerveModule[" + driveMotor.getDeviceId() + ',' + rotationMotor.getDeviceId() + ']';
+        loggingName = "SwerveModule-" + name + "-[" + driveMotor.getDeviceId() + ',' + rotationMotor.getDeviceId() + ']';
     }
 
+
     public String configureLogName() {
-        return "SwerveModule[" + driveMotor.getDeviceId() + ',' + rotationMotor.getDeviceId() + ']';
+        System.out.println(loggingName);
+        return loggingName;
     }
     /**
      * Reset the driven distance to 0.
@@ -175,6 +180,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * Returns the current angle of the module in radians, from the mag encoder.
      * @return a Rotation2d, where 0 is forward and pi/-pi is backward.
      */
+    @Log(methodName = "getRadians")
     public Rotation2d getMagEncoderAngle() {
 
         double unsignedAngle = magEncoder.getAbsolutePosition() * 2*Math.PI - magEncoderOffset;
@@ -189,6 +195,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * current angle is always desired angle.
      * @return a Rotation2d, where 0 is forward and pi/-pi is backward.
      */
+    @Log(methodName = "getRadians")
     public Rotation2d getCanEncoderAngle() {
         if(RobotBase.isSimulation()) {
             return new Rotation2d(rotationEncoderSim.getPosition());
@@ -204,6 +211,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * current velocity is always desired velocity.
      * @return
      */
+    @Log
     public double getCurrentVelocityMetersPerSecond() {
         if(RobotBase.isSimulation()) {
             return driveEncoderSim.getVelocity();
@@ -213,10 +221,11 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         }
     }
 
+    @Log
     public double getAppliedDriveVoltage() {
         return driveMotor.getAppliedOutput();
     }
-
+    @Log
     public double getAppliedRotationVoltage() {
         return rotationMotor.getAppliedOutput();
     }
@@ -285,12 +294,6 @@ public class SwerveModule extends SubsystemBase implements Loggable{
     }
 
     public void periodic() {
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/magEncoder", getMagEncoderAngle().getRadians());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/rotEncoder",  MathUtil.angleModulus(getCanEncoderAngle().getRadians()));
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/driveEncoder", getDriveDistanceMeters());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/driveVelocity", getCurrentVelocityMetersPerSecond());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/desiredAngle", this.desiredState.angle.getRadians());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/desiredVelocity",this.desiredState.speedMetersPerSecond);
     }
 
     /**

@@ -38,6 +38,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.CANDevices;
+import frc.robot.Constants.DriveConstants;
 import frc.robot.util.NomadMathUtil;
 import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
@@ -75,7 +76,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             CANDevices.frontLeftDriveMotorId,
             CANDevices.frontLeftRotationMotorId,
             CANDevices.frontLeftRotationEncoderId,
-            frontLeftAngleOffset
+            frontLeftAngleOffset,
+            "FL"
         );
 
     private final SwerveModule frontRight = 
@@ -83,7 +85,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             CANDevices.frontRightDriveMotorId,
             CANDevices.frontRightRotationMotorId,
             CANDevices.frontRightRotationEncoderId,
-            frontRightAngleOffset
+            frontRightAngleOffset,
+            "FR"
         );
 
     private final SwerveModule rearLeft = 
@@ -91,7 +94,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             CANDevices.rearLeftDriveMotorId,
             CANDevices.rearLeftRotationMotorId,
             CANDevices.rearLeftRotationEncoderId,
-            rearLeftAngleOffset
+            rearLeftAngleOffset,
+            "RL"
         );
 
     private final SwerveModule rearRight = 
@@ -99,7 +103,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             CANDevices.rearRightDriveMotorId,
             CANDevices.rearRightRotationMotorId,
             CANDevices.rearRightRotationEncoderId,
-            rearRightAngleOffset
+            rearRightAngleOffset,
+            "RR"
         );
 
     // commanded values from the joysticks and field relative value to use in AlignWithTargetVision and AlignWithGyro
@@ -112,12 +117,11 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     private final AHRS navx = new AHRS(Port.kMXP);
     private SimGyroSensorModel simNavx = new SimGyroSensorModel();
 
-    public final ProfiledPIDController rotationController = 
-    new ProfiledPIDController(3.0, 0, 0,
-        new TrapezoidProfile.Constraints(4*Math.PI,
-            2*Math.PI
-        )
-    );
+    public final ProfiledPIDController xController = 
+    new ProfiledPIDController(3.0, 0, 0, DriveConstants.X_DEFAULT_CONSTRAINTS);
+    
+    public final ProfiledPIDController yController = new ProfiledPIDController(3.0, 0, 0, DriveConstants.Y_DEFAULT_CONSTRAINTS);
+    public final ProfiledPIDController rotationController = new ProfiledPIDController(3.0, 0, 0, DriveConstants.THETA_DEFAULT_CONSTRAINTS);
 
     /**
      * odometry for the robot, measured in meters for linear motion and radians for rotational motion
@@ -136,6 +140,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         DrivebaseS.swerveSimModuleFactory()
     );
 
+    @Log.Exclude
     private final List<SwerveModule> modules = List.of(
         frontLeft, frontRight,
         rearLeft, rearRight
@@ -431,8 +436,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
                                    );
     }
 
-    static SwerveModule swerveModuleFactory(int driveMotorId, int rotationMotorId, int magEncoderId, double measuredOffsetRadians) {
-        SwerveModule module = new SwerveModule(driveMotorId, rotationMotorId, magEncoderId, measuredOffsetRadians);
+    static SwerveModule swerveModuleFactory(int driveMotorId, int rotationMotorId, int magEncoderId, double measuredOffsetRadians, String name) {
+        SwerveModule module = new SwerveModule(driveMotorId, rotationMotorId, magEncoderId, measuredOffsetRadians, name);
         module.resetDistance();
         return module;
     }

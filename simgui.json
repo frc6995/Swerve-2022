@@ -68,14 +68,52 @@
       "/LiveWindow/Ungrouped/PIDController[4]": "PIDController",
       "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
       "/LiveWindow/Ungrouped/navX-Sensor[4]": "Gyro",
+      "/Shuffleboard/RobotContainer/autoSelector": "String Chooser",
       "/Shuffleboard/RobotContainer/drivebaseS": "Subsystem",
+      "/Shuffleboard/RobotContainer/field": "Field2d",
       "/SmartDashboard/Field": "Field2d",
       "/SmartDashboard/SendableChooser[0]": "String Chooser"
     },
     "windows": {
+      "/Shuffleboard/RobotContainer/field": {
+        "backLeft": {
+          "arrowSize": 14,
+          "length": 0.20000000298023224,
+          "width": 0.20000000298023224
+        },
+        "backRight": {
+          "arrowSize": 16,
+          "length": 0.20000000298023224,
+          "width": 0.20000000298023224
+        },
+        "bottom": 206,
+        "cupid": {
+          "arrows": false,
+          "style": "Line"
+        },
+        "frontLeft": {
+          "arrowSize": 14,
+          "length": 0.20000000298023224,
+          "width": 0.20000000298023224
+        },
+        "frontRight": {
+          "arrowSize": 14,
+          "length": 0.20000000298023224,
+          "width": 0.20000000298023224
+        },
+        "height": 1.2192000150680542,
+        "image": "C:\\Users\\jashu\\PathWeaver\\Games\\3mx3m\\FTC_Field_1.png",
+        "left": 206,
+        "right": 423,
+        "top": 12,
+        "width": 1.2192000150680542,
+        "window": {
+          "visible": true
+        }
+      },
       "/SmartDashboard/Field": {
         "Robot": {
-          "arrowSize": 6,
+          "arrowSize": 58,
           "length": 0.6859999895095825
         },
         "backLeft": {
@@ -86,7 +124,7 @@
           "length": 0.20000000298023224,
           "width": 0.20000000298023224
         },
-        "bottom": 206,
+        "bottom": 903,
         "cupid": {
           "arrowSize": 4,
           "arrowWeight": 0.5,
@@ -104,12 +142,12 @@
           "style": "Box/Image",
           "width": 0.20000000298023224
         },
-        "height": 1.2192000150680542,
-        "image": "C:\\Users\\jashu\\PathWeaver\\Games\\3mx3m\\FTC_Field_1.png",
-        "left": 206,
-        "right": 423,
-        "top": 12,
-        "width": 1.2192000150680542,
+        "height": 8.229599952697754,
+        "image": "C:\\Users\\jashu\\PathWeaver\\Games\\2022 Rapid React\\2022-field.png",
+        "left": 74,
+        "right": 1781,
+        "top": 45,
+        "width": 16.459199905395508,
         "window": {
           "visible": true
         }
@@ -138,9 +176,12 @@
         },
         "SwerveModule[18,17]": {
           "open": true
-        },
+        }
+      },
+      "RobotContainer": {
         "open": true
-      }
+      },
+      "open": true
     },
     "SmartDashboard": {
       "Field": {
@@ -154,8 +195,7 @@
           "open": true
         },
         "open": true
-      },
-      "open": true
+      }
     }
   },
   "Plot": {
@@ -167,29 +207,12 @@
               "autoFit": true
             }
           ],
-          "height": 651,
-          "series": [
-            {
-              "color": [
-                0.3333333432674408,
-                0.658823549747467,
-                0.4078431725502014,
-                1.0
-              ],
-              "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/desiredVelocity"
-            },
-            {
-              "color": [
-                0.7686275243759155,
-                0.30588236451148987,
-                0.32156863808631897,
-                1.0
-              ],
-              "id": "NT:/SmartDashboard//Shuffleboard/DrivebaseS/SwerveModule[12,11]/driveVelocity"
-            }
-          ]
+          "height": 651
         }
-      ]
+      ],
+      "window": {
+        "visible": false
+      }
     },
     "Plot <1>": {
       "plots": [

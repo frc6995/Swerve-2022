@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import frc.robot.Constants.InputDevices;
 import frc.robot.commands.drivetrain.FollowPoseList;
 import frc.robot.commands.drivetrain.OperatorControlC;
+import frc.robot.commands.drivetrain.TankDriveC;
 import frc.robot.subsystems.DrivebaseS;
 import frc.robot.util.trajectory.TrajectoryReader;
 import io.github.oblarg.oblog.annotations.Log;
@@ -29,8 +30,10 @@ public class RobotContainer {
     @Log
     private final DrivebaseS drivebaseS = new DrivebaseS();
 
+    @Log
     private final Field2d field = new Field2d();
     
+    @Log
     SendableChooser<Command> autoSelector = new SendableChooser<Command>();
 
     public RobotContainer() {
@@ -43,6 +46,11 @@ public class RobotContainer {
                 true,
                 drivebaseS
             )
+            // new TankDriveC(
+            //     gamepad::getLeftY,
+            //     gamepad::getLeftX,
+            //     drivebaseS
+            // )
         );
 
         configureButtonBindings();
@@ -62,7 +70,6 @@ public class RobotContainer {
 
         
         field.getObject("cupid").setPoses(poseList);
-        SmartDashboard.putData(field);
 
     }
 
