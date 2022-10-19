@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RepeatCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.Constants.InputDevices;
 import frc.robot.commands.drivetrain.FollowPoseList;
 import frc.robot.commands.drivetrain.OperatorControlC;
@@ -38,6 +39,8 @@ public class RobotContainer {
 
     public RobotContainer() {
 
+        field.getObject("target").setPose(new Pose2d());
+
         drivebaseS.setDefaultCommand(
             new OperatorControlC(
                 gamepad::getLeftY,
@@ -46,6 +49,7 @@ public class RobotContainer {
                 true,
                 drivebaseS
             )
+            //new RunCommand(()->{drivebaseS.driveToPose(field.getObject("target").getPose());}, drivebaseS)
             // new TankDriveC(
             //     gamepad::getLeftY,
             //     gamepad::getLeftX,
@@ -69,7 +73,7 @@ public class RobotContainer {
             );
 
         
-        field.getObject("cupid").setPoses(poseList);
+        //field.getObject("cupid").setPoses(poseList);
 
     }
 

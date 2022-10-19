@@ -249,6 +249,39 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         
     }
 
+    public void driveToPose(Pose2d poseRef, double xFF, double yFF, double thetaFF) {
+        Pose2d currentPose = getPose();
+    // Calculate feedforward velocities (field-relative).
+
+    SmartDashboard.putString("trajPose", poseRef.toString());
+    // Calculate feedback velocities (based on position error).
+    double xFeedback = xController.calculate(currentPose.getX(), poseRef.getX());
+    double yFeedback = yController.calculate(currentPose.getY(), poseRef.getY());
+    double thetaFeedback = rotationController.calculate(currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());
+
+    // Return next output.
+    drive(ChassisSpeeds.fromFieldRelativeSpeeds(
+        xFF + xFeedback, yFF + yFeedback, thetaFeedback, currentPose.getRotation()));
+    }
+
+    public void driveToPose(Pose2d poseRef) {
+        Pose2d currentPose = getPose();
+    // Calculate feedforward velocities (field-relative).
+
+    SmartDashboard.putString("trajPose", poseRef.toString());
+    // Calculate feedback velocities (based on position error).
+    double xFeedback = xController.calculate(currentPose.getX(), poseRef.getX());
+    double yFeedback = yController.calculate(currentPose.getY(), poseRef.getY());
+    double thetaFeedback = rotationController.calculate(currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());
+    double xFF = xController.getSetpoint().velocity;
+    double yFF = yController.getSetpoint().velocity;
+
+    // Return next output.
+    drive(ChassisSpeeds.fromFieldRelativeSpeeds(
+        xFF + xFeedback, yFF + yFeedback, thetaFeedback, currentPose.getRotation()));
+    }
+
+
     /**
      * Return the desired states of the modules when the robot is stopped. This can be an x-shape to hold against defense,
      * or all modules forward. Here we have it stopping all modules but leaving the angles at their current positions
