@@ -124,7 +124,7 @@ public class PoseListSwerveControllerCommand extends CommandBase {
 
     // Return next output.
     m_outputSpeeds.accept(ChassisSpeeds.fromFieldRelativeSpeeds(
-        xFF + xFeedback, yFF + yFeedback, thetaFF, currentPose.getRotation()));
+        xFF + xFeedback, yFF + yFeedback, thetaFF + desiredState.omegaRadiansPerSecond, currentPose.getRotation()));
   }
 
   @Override

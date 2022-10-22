@@ -32,7 +32,7 @@ public class FollowTrajectory extends SwerveControllerCommand {
             DriveConstants.m_kinematics, 
             new PIDController(0.001, 0, 0),
             new PIDController(0.001, 0, 00), 
-            drive.rotationController,
+            drive.thetaController,
             drive::setModuleStates, 
             drive
         );    

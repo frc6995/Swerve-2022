@@ -33,7 +33,7 @@ public class FollowPoseList extends PoseListSwerveControllerCommand {
             drive::getPose,
             new PIDController(3, 0, 0),
             new PIDController(3, 0, 0), 
-            drive.rotationController,
+            drive.thetaController,
             drive::drive, 
             drive
         );  

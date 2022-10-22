@@ -2,6 +2,7 @@ package frc.robot.commands.drivetrain;
 
 import java.util.function.DoubleSupplier;
 
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Constants.DriveConstants;
@@ -22,8 +23,11 @@ public class OperatorControlC extends CommandBase {
      * versus using a double which would only update when the constructor is called
      */
     private final DoubleSupplier forwardX;
+    private final SlewRateLimiter xRateLimiter = new SlewRateLimiter(1.5);
     private final DoubleSupplier forwardY;
+    private final SlewRateLimiter yRateLimiter = new SlewRateLimiter(1.5);
     private final DoubleSupplier rotation;
+    private final SlewRateLimiter thetaRateLimiter = new SlewRateLimiter(1.5);
     
     private final boolean isFieldRelative;
 
@@ -45,6 +49,13 @@ public class OperatorControlC extends CommandBase {
         addRequirements(subsystem);
 
     }
+
+    @Override
+    public void initialize() {
+        xRateLimiter.reset(0);
+        yRateLimiter.reset(0);
+        thetaRateLimiter.reset(0);
+    }
     
     @Override
     public void execute() {
@@ -57,15 +68,21 @@ public class OperatorControlC extends CommandBase {
 
         double fwdX = forwardX.getAsDouble();
         fwdX = Math.copySign(fwdX, fwdX);
-        fwdX = deadbandInputs(fwdX) * Units.feetToMeters(DriveConstants.MAX_MODULE_SPEED_FPS);
+        fwdX = deadbandInputs(fwdX);
+        fwdX = xRateLimiter.calculate(fwdX);
+        fwdX *= Units.feetToMeters(4);
 
         double fwdY = forwardY.getAsDouble();
         fwdY = Math.copySign(fwdY, fwdY);
-        fwdY = deadbandInputs(fwdY) * Units.feetToMeters(DriveConstants.MAX_MODULE_SPEED_FPS);
-
+        fwdY = deadbandInputs(fwdY);
+        fwdY = yRateLimiter.calculate(fwdY);
+        fwdY *= Units.feetToMeters(4);
         double rot = rotation.getAsDouble();
         //rot = Math.copySign(rot * rot, rot);
-        rot = deadbandInputs(rot) * Units.degreesToRadians(DriveConstants.teleopTurnRateDegPerSec);
+        rot = deadbandInputs(rot);
+        rot = thetaRateLimiter.calculate(rot);
+        rot *= Units.degreesToRadians(DriveConstants.teleopTurnRateDegPerSec);
+
 
         drive.drive(
             -fwdX,

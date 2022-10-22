@@ -19,8 +19,12 @@ import static frc.robot.Constants.DriveConstants.robotToModuleTL;
 import java.util.List;
 
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.PathPlannerTrajectory;
+import frc.robot.util.trajectory.PPSwerveControllerCommand;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.HolonomicDriveController;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -35,6 +39,7 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Constants.CANDevices;
@@ -117,11 +122,10 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     private final AHRS navx = new AHRS(Port.kMXP);
     private SimGyroSensorModel simNavx = new SimGyroSensorModel();
 
-    public final ProfiledPIDController xController = 
-    new ProfiledPIDController(3.0, 0, 0, DriveConstants.X_DEFAULT_CONSTRAINTS);
-    
-    public final ProfiledPIDController yController = new ProfiledPIDController(3.0, 0, 0, DriveConstants.Y_DEFAULT_CONSTRAINTS);
-    public final ProfiledPIDController rotationController = new ProfiledPIDController(3.0, 0, 0, DriveConstants.THETA_DEFAULT_CONSTRAINTS);
+    public final PIDController xController = new PIDController(3.0, 0, 0);
+    public final PIDController yController = new PIDController(3.0, 0, 0);
+    public final ProfiledPIDController thetaController = new ProfiledPIDController(10, 0, 0, DriveConstants.NO_CONSTRAINTS);
+    public final HolonomicDriveController holonomicDriveController = new HolonomicDriveController(xController, yController, thetaController);
 
     /**
      * odometry for the robot, measured in meters for linear motion and radians for rotational motion
@@ -157,7 +161,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         );
 
     public DrivebaseS() {
-
         navx.reset();
         
         // initialize the rotation offsets for the CANCoders
@@ -170,7 +173,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
         // Allow the robot rotation controller to treat crossing over the rollover point as a valid way to move
         // this is useful because if we want to go from 179 to -179 degrees, it's really a 2-degree move, not 358 degrees
-        rotationController.enableContinuousInput(-Math.PI, Math.PI);
+        thetaController.enableContinuousInput(-Math.PI, Math.PI);
         resetPose(new Pose2d());
     }
 
@@ -184,13 +187,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         // update the odometry every 20ms
         odometry.update(getHeading(), getModuleStates());
 
-        SmartDashboard.putNumber("heading", getHeading().getDegrees());
-        SmartDashboard.putNumber("Odometry x", getPose().getX());
-        SmartDashboard.putNumber("Odometry y", getPose().getY());
-        SmartDashboard.putNumber("fwd", commandedForward);
-        SmartDashboard.putNumber("left", commandedStrafe);
-        SmartDashboard.putNumber("rotation", commandedRotation);
-        
     }
     
     public void drive(ChassisSpeeds speeds) {
@@ -214,6 +210,10 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
         setModuleStates(states);
 
+    }
+
+    public void driveFieldRelative(ChassisSpeeds speeds) {
+        drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond, getPoseHeading()));
     }
     /**
      * method for driving the robot
@@ -257,7 +257,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     // Calculate feedback velocities (based on position error).
     double xFeedback = xController.calculate(currentPose.getX(), poseRef.getX());
     double yFeedback = yController.calculate(currentPose.getY(), poseRef.getY());
-    double thetaFeedback = rotationController.calculate(currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());
+    double thetaFeedback = thetaController.calculate(currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());
 
     // Return next output.
     drive(ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -272,9 +272,9 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     // Calculate feedback velocities (based on position error).
     double xFeedback = xController.calculate(currentPose.getX(), poseRef.getX());
     double yFeedback = yController.calculate(currentPose.getY(), poseRef.getY());
-    double thetaFeedback = rotationController.calculate(currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());
-    double xFF = xController.getSetpoint().velocity;
-    double yFF = yController.getSetpoint().velocity;
+    double thetaFeedback = thetaController.calculate(currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());
+    double xFF = 0;
+    double yFF = 0;
 
     // Return next output.
     drive(ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -480,5 +480,23 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         frontRight.initRotationOffset();
         rearLeft.initRotationOffset();
         rearRight.initRotationOffset();
+    }
+
+    public void resetPID() {
+        // xController.reset(odometry.getPoseMeters().getX());
+        // yController.reset(odometry.getPoseMeters().getY());
+        thetaController.reset(odometry.getPoseMeters().getRotation().getRadians());
+    }
+
+    /****COMMANDS */
+    public Command pathPlannerCommand(PathPlannerTrajectory path) {
+        PPSwerveControllerCommand command = new PPSwerveControllerCommand(
+            path,
+            this::getPose,
+            holonomicDriveController,
+            this::drive,
+            this
+        );
+        return command;
     }
 }
