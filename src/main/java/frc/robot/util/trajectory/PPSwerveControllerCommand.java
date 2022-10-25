@@ -5,16 +5,14 @@ import java.util.function.Supplier;
 
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
-import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
@@ -44,7 +42,7 @@ public class PPSwerveControllerCommand extends CommandBase {
     private final Timer m_timer = new Timer();
     private final PathPlannerTrajectory m_trajectory;
     private final Supplier<Pose2d> m_pose;
-    private final HolonomicDriveController m_controller;
+    private final PPHolonomicDriveController m_controller;
     private final Consumer<ChassisSpeeds> m_outputChassisSpeedsRobotRelative;
 
     /**
@@ -79,7 +77,7 @@ public class PPSwerveControllerCommand extends CommandBase {
     public PPSwerveControllerCommand(
             PathPlannerTrajectory trajectory,
             Supplier<Pose2d> pose,
-            HolonomicDriveController driveController,
+            PPHolonomicDriveController driveController,
             Consumer<ChassisSpeeds> outputChassisSpeedsFieldRelative,
             Subsystem... requirements) {
         m_trajectory = trajectory;
@@ -106,8 +104,7 @@ public class PPSwerveControllerCommand extends CommandBase {
         var desiredState = (PathPlannerState) m_trajectory.sample(curTime);
 
         // By passing in the desired state velocity and, we allow the controller to 
-        var targetChassisSpeeds = m_controller.calculate(m_pose.get(), desiredState, desiredState.holonomicRotation);
-        targetChassisSpeeds.omegaRadiansPerSecond += desiredState.angularVelocity.getRadians();
+        var targetChassisSpeeds = m_controller.calculate(m_pose.get(), desiredState);
         m_outputChassisSpeedsRobotRelative.accept(targetChassisSpeeds);
     }
 

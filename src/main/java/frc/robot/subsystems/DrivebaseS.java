@@ -20,12 +20,10 @@ import java.util.List;
 
 import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.PathPlannerTrajectory;
-import frc.robot.util.trajectory.PPSwerveControllerCommand;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -33,7 +31,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.SPI.Port;
@@ -41,13 +38,11 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
 import frc.robot.Constants.CANDevices;
-import frc.robot.Constants.DriveConstants;
-import frc.robot.util.NomadMathUtil;
 import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
 import frc.robot.util.sim.wpiClasses.SwerveModuleSim;
+import frc.robot.util.trajectory.PPSwerveControllerCommand;
 import io.github.oblarg.oblog.Loggable;
 import io.github.oblarg.oblog.annotations.Log;
 
@@ -124,8 +119,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
     public final PIDController xController = new PIDController(3.0, 0, 0);
     public final PIDController yController = new PIDController(3.0, 0, 0);
-    public final ProfiledPIDController thetaController = new ProfiledPIDController(10, 0, 0, DriveConstants.NO_CONSTRAINTS);
-    public final HolonomicDriveController holonomicDriveController = new HolonomicDriveController(xController, yController, thetaController);
+    public final PIDController thetaController = new PIDController(10, 0, 0);
+    public final PPHolonomicDriveController holonomicDriveController = new PPHolonomicDriveController(xController, yController, thetaController);
 
     /**
      * odometry for the robot, measured in meters for linear motion and radians for rotational motion
@@ -485,7 +480,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public void resetPID() {
         // xController.reset(odometry.getPoseMeters().getX());
         // yController.reset(odometry.getPoseMeters().getY());
-        thetaController.reset(odometry.getPoseMeters().getRotation().getRadians());
+        //thetaController.reset();
     }
 
     /****COMMANDS */
