@@ -1,7 +1,9 @@
 package frc.robot.util.trajectory;
 
 import java.nio.file.Path;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.pathplanner.lib.PathPlannerTrajectory;
@@ -11,11 +13,17 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.robot.subsystems.DrivebaseS;
+import io.github.oblarg.oblog.Loggable;
+import io.github.oblarg.oblog.annotations.Log;
 
 /**
  * A command that uses two PID controllers ({@link PIDController}) and a
@@ -39,97 +47,86 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
  * This class is provided by the NewCommands VendorDep
  */
 @SuppressWarnings("MemberName")
-public class PPSwerveControllerCommand extends CommandBase {
+public class PPChasePoseCommand extends CommandBase implements Loggable {
+    @Log(methodName = "get")
     private final Timer m_timer = new Timer();
-    private Supplier<PathPlannerTrajectory> m_trajectorySupplier;
+    private Supplier<Pose2d> m_targetPose;
     private PathPlannerTrajectory m_trajectory;
     private final Supplier<Pose2d> m_pose;
     private final PPHolonomicDriveController m_controller;
     private final Consumer<ChassisSpeeds> m_outputChassisSpeedsRobotRelative;
-    private boolean safeToSample = true;
+    /** A Consumer for  */
+    private final Consumer<PathPlannerTrajectory> m_outputTrajectory;
+    private final BiFunction<Pose2d, Pose2d, PathPlannerTrajectory> m_trajectoryGenerator;
+    private Pose2d m_lastRegenTarget;
+    private DrivebaseS m_drive;
 
     /**
-     * Constructs a new PPSwerveControllerCommand that when executed will follow the
-     * provided
-     * trajectory. This command will not return output voltages but rather raw
-     * module states from the
-     * position controllers which need to be put into a velocity PID.
-     *
-     * <p>
-     * Note: The controllers will *not* set the outputVolts to zero upon completion
-     * of the path-
-     * this is left to the user, since it is not appropriate for paths with
-     * nonstationary endstates.
-     *
-     * @param trajectory         The trajectory to follow.
-     * @param pose               A function that supplies the robot pose - use one
-     *                           of the odometry classes to
-     *                           provide this.
-     * @param kinematics         The kinematics for the robot drivetrain.
-     * @param xController        The Trajectory Tracker PID controller for the
-     *                           robot's x position.
-     * @param yController        The Trajectory Tracker PID controller for the
-     *                           robot's y position.
-     * @param thetaController    The Trajectory Tracker PID controller for angle for
-     *                           the robot.
-     * @param outputModuleStates The raw output module states from the position
-     *                           controllers.
-     * @param requirements       The subsystems to require.
+     * Constructs a command to follow a moving target pose. Uses PathPlanner trajectories when the target is more than 0.2 m away.
+     * @param targetPose A Supplier for the target pose.
+     * @param pose A Supplier for the current pose.
+     * @param driveController The PPHolonomicDriveController to use.
+     * @param outputChassisSpeedsFieldRelative
+     * @param trajectoryDebugOutput
+     * @param trajectoryGenerator
+     * @param drive
      */
-    @SuppressWarnings("ParameterName")
-    public PPSwerveControllerCommand(
-            PathPlannerTrajectory trajectory,
-            Supplier<Pose2d> pose,
-            PPHolonomicDriveController driveController,
-            Consumer<ChassisSpeeds> outputChassisSpeedsFieldRelative,
-            Subsystem... requirements) {
-                this(()->trajectory, pose, driveController, outputChassisSpeedsFieldRelative, requirements);
-        
-    }
-
-    public PPSwerveControllerCommand(
-        Supplier<PathPlannerTrajectory> trajectory,
+    public PPChasePoseCommand(
+        Supplier<Pose2d> targetPose,
         Supplier<Pose2d> pose,
         PPHolonomicDriveController driveController,
         Consumer<ChassisSpeeds> outputChassisSpeedsFieldRelative,
-        Subsystem... requirements) {
-            m_trajectorySupplier = trajectory;
+        Consumer<PathPlannerTrajectory> trajectoryDebugOutput,
+        BiFunction<Pose2d, Pose2d, PathPlannerTrajectory> trajectoryGenerator,
+        DrivebaseS drive) {
+        
+        m_targetPose = targetPose;
         m_pose = pose;
-
+        m_lastRegenTarget = m_targetPose.get();
 
         m_controller = driveController;
-
+        m_outputTrajectory = trajectoryDebugOutput;
+        m_trajectoryGenerator = trajectoryGenerator;
         m_outputChassisSpeedsRobotRelative = outputChassisSpeedsFieldRelative;
-
-        addRequirements(requirements);
+        m_drive = drive;
+        addRequirements(m_drive);
         }
 
 
     @Override
     public void initialize() {
+        regenTrajectory();
+    }
+
+    private void regenTrajectory() {
         m_timer.reset();
         m_timer.start();
-        m_trajectory = m_trajectorySupplier.get();
-        if(m_trajectory.getStates().size() == 0) {
-            this.safeToSample = false;
-        }
-        else {
-            this.safeToSample = true;
-        }
+        m_lastRegenTarget  = m_targetPose.get();
+        m_trajectory = m_trajectoryGenerator.apply(m_pose.get(), m_targetPose.get());
+        m_outputTrajectory.accept(m_trajectory);
     }
 
     @Override
     @SuppressWarnings("LocalVariableName")
     public void execute() {
+        SmartDashboard.putNumber("timer", m_timer.get());
+        // If the target's moved more than 0.2 m since the last regen, generate the trajectory again.
+        if(m_targetPose.get().getTranslation().getDistance(m_lastRegenTarget.getTranslation()) > 0.2) {
+            regenTrajectory();
+        }
+        
         PathPlannerState desiredState;
-        if (safeToSample) {
+        // Make sure the trajectory is not empty
+        // Make sure it's still time to be following the trajectory.
+        if (m_trajectory.getStates().size() != 0 && m_timer.get() < m_trajectory.getTotalTimeSeconds()) {
             double curTime = m_timer.get();
             desiredState = (PathPlannerState) m_trajectory.sample(curTime);
         }
+        // if the trajectory is empty, or the time is up, just use the holonomic drive controller to hold the pose.
         else {
             desiredState = new PathPlannerState();
-            desiredState.holonomicRotation = m_pose.get().getRotation();
-            desiredState.poseMeters = m_pose.get();
+            desiredState.holonomicRotation = m_targetPose.get().getRotation();
+            desiredState.poseMeters = m_targetPose.get();
             desiredState.holonomicAngularVelocityRadPerSec = 0;
         }
             // By passing in the desired state velocity and, we allow the controller to 
@@ -144,6 +141,6 @@ public class PPSwerveControllerCommand extends CommandBase {
 
     @Override
     public boolean isFinished() {
-        return !safeToSample || m_timer.hasElapsed(m_trajectory.getTotalTimeSeconds());
+        return false;
     }
 }

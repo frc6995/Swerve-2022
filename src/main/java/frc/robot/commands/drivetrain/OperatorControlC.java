@@ -23,11 +23,11 @@ public class OperatorControlC extends CommandBase {
      * versus using a double which would only update when the constructor is called
      */
     private final DoubleSupplier forwardX;
-    private final SlewRateLimiter xRateLimiter = new SlewRateLimiter(1.5);
+    private final SlewRateLimiter xRateLimiter = new SlewRateLimiter(3);
     private final DoubleSupplier forwardY;
-    private final SlewRateLimiter yRateLimiter = new SlewRateLimiter(1.5);
+    private final SlewRateLimiter yRateLimiter = new SlewRateLimiter(3);
     private final DoubleSupplier rotation;
-    private final SlewRateLimiter thetaRateLimiter = new SlewRateLimiter(1.5);
+    private final SlewRateLimiter thetaRateLimiter = new SlewRateLimiter(3);
     
     private final boolean isFieldRelative;
 
@@ -70,13 +70,13 @@ public class OperatorControlC extends CommandBase {
         fwdX = Math.copySign(fwdX, fwdX);
         fwdX = deadbandInputs(fwdX);
         fwdX = xRateLimiter.calculate(fwdX);
-        fwdX *= Units.feetToMeters(4);
+        fwdX *= Units.feetToMeters(8);
 
         double fwdY = forwardY.getAsDouble();
         fwdY = Math.copySign(fwdY, fwdY);
         fwdY = deadbandInputs(fwdY);
         fwdY = yRateLimiter.calculate(fwdY);
-        fwdY *= Units.feetToMeters(4);
+        fwdY *= Units.feetToMeters(8);
         double rot = rotation.getAsDouble();
         //rot = Math.copySign(rot * rot, rot);
         rot = deadbandInputs(rot);

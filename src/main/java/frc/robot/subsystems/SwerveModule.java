@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.util.sim.DutyCycleEncoderSim;
 import frc.robot.util.sim.SimEncoder;
+import frc.robot.util.sim.SparkMaxEncoderWrapper;
 import io.github.oblarg.oblog.Loggable;
 import io.github.oblarg.oblog.annotations.Log;
 
@@ -37,6 +38,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
     private final CANSparkMax driveMotor;
     private final CANSparkMax rotationMotor;
 
+    private final SparkMaxEncoderWrapper driveEncoderWrapper;
+    private final SparkMaxEncoderWrapper rotationEncoderWrapper;
     private final RelativeEncoder driveEncoder;
     private final RelativeEncoder rotationEncoder;
 
@@ -75,12 +78,32 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         rotationMotor.restoreFactoryDefaults(false);
         driveEncoder = driveMotor.getEncoder();
         rotationEncoder = rotationMotor.getEncoder();
+       
 
         driveEncoderSim = new SimEncoder();
         rotationEncoderSim = new SimEncoder();
 
+        driveEncoder.setPositionConversionFactor(
+            Math.PI * (DriveConstants.WHEEL_RADIUS_M * 2) // meters/ wheel rev
+            / DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV // 1/ (enc revs / wheel rev) = wheel rev/enc rev
+        );
+
+        //set the output of the drive encoder to be in meters per second (instead of motor rpm) for velocity measurement
+        // wheel diam * pi = wheel circumference (meters/wheel rot) *
+        // 1/60 minutes per sec *
+        // 1/5.14 wheel rots per motor rot *
+        // motor rpm = wheel speed, m/s
+        driveEncoder.setVelocityConversionFactor(
+            (DriveConstants.WHEEL_RADIUS_M * 2) * Math.PI / 60 / DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV
+        );
+
         rotationEncoder.setPositionConversionFactor(2.0 * Math.PI * DriveConstants.AZMTH_REVS_PER_ENC_REV);
+
+        driveEncoderWrapper = new SparkMaxEncoderWrapper(driveMotor);
+        rotationEncoderWrapper = new SparkMaxEncoderWrapper(rotationMotor);
         //Config the mag encoder, which is directly on the module rotation shaft.
+
+
 
         magEncoder = new DutyCycleEncoder(magEncoderId);
         //magEncoder.setDistancePerRotation(2*Math.PI);
@@ -121,19 +144,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         // number of motor rots
         // = number of meters traveled
 
-        driveEncoder.setPositionConversionFactor(
-            Math.PI * (DriveConstants.WHEEL_RADIUS_M * 2) // meters/ wheel rev
-            / DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV // 1/ (enc revs / wheel rev) = wheel rev/enc rev
-        );
 
-        //set the output of the drive encoder to be in meters per second (instead of motor rpm) for velocity measurement
-        // wheel diam * pi = wheel circumference (meters/wheel rot) *
-        // 1/60 minutes per sec *
-        // 1/5.14 wheel rots per motor rot *
-        // motor rpm = wheel speed, m/s
-        driveEncoder.setVelocityConversionFactor(
-            (DriveConstants.WHEEL_RADIUS_M * 2) * Math.PI / 60 / DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV
-        );
 
         //set the output of the rotation encoder to be in radians
         // (2pi rad/(module rotation)) / 12.8 (motor rots/module rots)
@@ -151,7 +162,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      */
     
     public void resetDistance() {
-
+        driveEncoderWrapper.setPosition(0);
+        
         driveEncoder.setPosition(0.0);
         driveEncoderSim.setPosition(0);
 
@@ -162,12 +174,13 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * @return the distance in meters.
      */
     public double getDriveDistanceMeters() {
-        if (RobotBase.isSimulation()) {
-            return driveEncoderSim.getPosition();
-        }
-        else {
-            return driveEncoder.getPosition();
-        }
+        return driveEncoderWrapper.getPosition();
+        // if (RobotBase.isSimulation()) {
+        //     return driveEncoderSim.getPosition();
+        // }
+        // else {
+        //     return driveEncoder.getPosition();
+        // }
 
     }
 
@@ -196,12 +209,13 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      */
     @Log(methodName = "getRadians")
     public Rotation2d getCanEncoderAngle() {
-        if(RobotBase.isSimulation()) {
-            return new Rotation2d(rotationEncoderSim.getPosition());
-        }
-        else {
-            return new Rotation2d(rotationEncoder.getPosition());
-        }
+        return new Rotation2d(rotationEncoderWrapper.getPosition());
+        // if(RobotBase.isSimulation()) {
+        //     return new Rotation2d(rotationEncoderSim.getPosition());
+        // }
+        // else {
+        //     return new Rotation2d(rotationEncoder.getPosition());
+        // }
     }
 
     /**
@@ -212,12 +226,13 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      */
     @Log
     public double getCurrentVelocityMetersPerSecond() {
-        if(RobotBase.isSimulation()) {
-            return driveEncoderSim.getVelocity();
-        }
-        else {
-            return driveEncoder.getVelocity();
-        }
+        return driveEncoderWrapper.getVelocity();
+        // if(RobotBase.isSimulation()) {
+        //     return driveEncoderSim.getVelocity();
+        // }
+        // else {
+        //     return driveEncoder.getVelocity();
+        // }
     }
 
     @Log
@@ -237,6 +252,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * the module offset from forward.
     */
     public void initRotationOffset() {
+        rotationEncoderWrapper.setPosition(getMagEncoderAngle().getRadians());
+
         rotationEncoder.setPosition(getMagEncoderAngle().getRadians());
         rotationEncoderSim.setPosition(getMagEncoderAngle().getRadians());
     }
@@ -286,7 +303,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         }
         else {
             
-            rotationMotor.setVoltage(rotationkP * 25 * goalMinDistance);
+            rotationMotor.setVoltage(rotationkP * 50 * goalMinDistance);
             driveMotor.setVoltage(DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond,
             (this.desiredState.speedMetersPerSecond - previousState.speedMetersPerSecond) / 0.02) * 12.0/10 * 12.0/10);
         }
@@ -314,6 +331,10 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * @param wheelVel_mps
      */
     public void setSimState(double angle_rad, double wheelPos_m, double wheelVel_mps) {
+        rotationEncoderWrapper.setSimPosition(angle_rad);
+        driveEncoderWrapper.setSimPosition(wheelPos_m);
+        driveEncoderWrapper.setSimVelocity(wheelVel_mps);
+
         rotationEncoderSim.setPosition(angle_rad);
         driveEncoderSim.setPosition(wheelPos_m);
         driveEncoderSim.setVelocity(wheelVel_mps);

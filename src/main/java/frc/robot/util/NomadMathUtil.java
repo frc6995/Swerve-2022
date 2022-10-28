@@ -12,7 +12,8 @@ public class NomadMathUtil {
     }
 
     public static Rotation2d getDirection(Translation2d transform) {
-        return new Rotation2d(Math.atan2(transform.getY(), transform.getX()));
+        //add tiny number so that 0/0 comes out to 0 angle, not a div by 0 error
+        return new Rotation2d(transform.getX(), transform.getY());
     }
 
     public static double getDistance(Transform2d transform){

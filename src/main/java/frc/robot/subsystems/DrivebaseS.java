@@ -17,9 +17,13 @@ import static frc.robot.Constants.DriveConstants.m_kinematics;
 import static frc.robot.Constants.DriveConstants.robotToModuleTL;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.PathConstraints;
+import com.pathplanner.lib.PathPlanner;
 import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.PathPoint;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.MathUtil;
@@ -27,21 +31,30 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants.CANDevices;
+import frc.robot.util.NomadMathUtil;
 import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
 import frc.robot.util.sim.wpiClasses.SwerveModuleSim;
+import frc.robot.util.trajectory.PPChasePoseCommand;
 import frc.robot.util.trajectory.PPSwerveControllerCommand;
 import io.github.oblarg.oblog.Loggable;
 import io.github.oblarg.oblog.annotations.Log;
@@ -167,8 +180,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         rearRight.resetDistance();
 
         // Allow the robot rotation controller to treat crossing over the rollover point as a valid way to move
-        // this is useful because if we want to go from 179 to -179 degrees, it's really a 2-degree move, not 358 degrees
-        thetaController.enableContinuousInput(-Math.PI, Math.PI);
+        // this is useful because if we want to go from 179 to -179 degrees, it's really a 2-degree move, not 358 degreesx
         resetPose(new Pose2d());
     }
 
@@ -244,38 +256,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         
     }
 
-    public void driveToPose(Pose2d poseRef, double xFF, double yFF, double thetaFF) {
-        Pose2d currentPose = getPose();
-    // Calculate feedforward velocities (field-relative).
-
-    SmartDashboard.putString("trajPose", poseRef.toString());
-    // Calculate feedback velocities (based on position error).
-    double xFeedback = xController.calculate(currentPose.getX(), poseRef.getX());
-    double yFeedback = yController.calculate(currentPose.getY(), poseRef.getY());
-    double thetaFeedback = thetaController.calculate(currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());
-
-    // Return next output.
-    drive(ChassisSpeeds.fromFieldRelativeSpeeds(
-        xFF + xFeedback, yFF + yFeedback, thetaFeedback, currentPose.getRotation()));
-    }
-
-    public void driveToPose(Pose2d poseRef) {
-        Pose2d currentPose = getPose();
-    // Calculate feedforward velocities (field-relative).
-
-    SmartDashboard.putString("trajPose", poseRef.toString());
-    // Calculate feedback velocities (based on position error).
-    double xFeedback = xController.calculate(currentPose.getX(), poseRef.getX());
-    double yFeedback = yController.calculate(currentPose.getY(), poseRef.getY());
-    double thetaFeedback = thetaController.calculate(currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());
-    double xFF = 0;
-    double yFF = 0;
-
-    // Return next output.
-    drive(ChassisSpeeds.fromFieldRelativeSpeeds(
-        xFF + xFeedback, yFF + yFeedback, thetaFeedback, currentPose.getRotation()));
-    }
-
 
     /**
      * Return the desired states of the modules when the robot is stopped. This can be an x-shape to hold against defense,
@@ -300,7 +280,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             modules.get(i).setDesiredStateClosedLoop(moduleStates[i]);
         }
     }
-
     // returns an array of SwerveModuleStates. 
     // Front(left, right), Rear(left, right)
     // This order is important to remain consistent across the codebase, or commands can get swapped around.
@@ -366,6 +345,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         return navx.getRotation2d();
     }
 
+    @Log(methodName = "getRadians")
     // Gets the current heading based on odometry. (this value will reflect odometry resets)
     public Rotation2d getPoseHeading() {
         return getPose().getRotation();
@@ -388,6 +368,24 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public void resetImu() {
         navx.reset();
         simNavx.resetToPose(new Pose2d());
+    }
+
+    // Returns a Translation2d representing the linear robot speed in field coordinates.
+    public Translation2d getFieldRelativeLinearSpeedsMPS() {
+        ChassisSpeeds robotRelativeSpeeds = m_kinematics.toChassisSpeeds(getModuleStates());
+        ChassisSpeeds fieldRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+            robotRelativeSpeeds.vxMetersPerSecond,
+            robotRelativeSpeeds.vyMetersPerSecond,
+            robotRelativeSpeeds.omegaRadiansPerSecond,
+            getPoseHeading().unaryMinus()
+        );
+        Translation2d translation = new Translation2d(fieldRelativeSpeeds.vxMetersPerSecond, fieldRelativeSpeeds.vyMetersPerSecond);
+        if (NomadMathUtil.getDistance(translation) < 0.01) {
+            return new Translation2d();
+        }
+        else {
+            return translation;
+        }
     }
 
     @Override
@@ -478,12 +476,26 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     }
 
     public void resetPID() {
+        xController.reset();
+        yController.reset();
+        thetaController.reset();
         // xController.reset(odometry.getPoseMeters().getX());
         // yController.reset(odometry.getPoseMeters().getY());
         //thetaController.reset();
     }
 
     /****COMMANDS */
+    public Command pathPlannerCommand(Supplier<PathPlannerTrajectory> path) {
+        PPSwerveControllerCommand command = new PPSwerveControllerCommand(
+            path,
+            this::getPose,
+            holonomicDriveController,
+            this::drive,
+            this
+        );
+        return command;
+    }
+
     public Command pathPlannerCommand(PathPlannerTrajectory path) {
         PPSwerveControllerCommand command = new PPSwerveControllerCommand(
             path,
@@ -493,5 +505,55 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             this
         );
         return command;
+    }
+
+    public static PathPlannerTrajectory generateTrajectoryToPose(Pose2d robotPose, Pose2d target, Translation2d currentSpeedVectorMPS) {
+
+                
+                // Robot velocity calculated from module states.
+                Rotation2d fieldRelativeTravelDirection = NomadMathUtil.getDirection(currentSpeedVectorMPS);
+                double travelSpeed = currentSpeedVectorMPS.getNorm();
+
+                
+                Translation2d robotToTargetTranslation = target.getTranslation().minus(robotPose.getTranslation());
+                // Initial velocity override is the component of robot velocity along the robot-to-target vector.
+                // If the robot velocity is pointing away from the target, start at 0 velocity.
+                Rotation2d travelOffsetFromTarget = NomadMathUtil.getDirection(robotToTargetTranslation).minus(fieldRelativeTravelDirection);
+                travelSpeed = Math.max(0, travelSpeed * travelOffsetFromTarget.getCos());
+                // We only want to regenerate if the target is far enough away from the robot. 
+                // PathPlanner has issues with near-zero-length paths and we need a particular tolerance for success anyway.
+                if (
+                    robotToTargetTranslation.getNorm() > 0.1
+                ) {
+                    PathPlannerTrajectory pathPlannerTrajectory = PathPlanner.generatePath(
+                        new PathConstraints(4, 4), 
+                        //Start point. At the position of the robot, initial travel direction toward the target,
+                        // robot rotation as the holonomic rotation, and putting in the (possibly 0) velocity override.
+                        new PathPoint(
+                            robotPose.getTranslation(),
+                            NomadMathUtil.getDirection(robotToTargetTranslation),
+                            robotPose.getRotation(),
+                            travelSpeed), // position, heading
+                        // position, heading
+                        new PathPoint(
+                            target.getTranslation(),
+                            NomadMathUtil.getDirection(robotToTargetTranslation),
+                            target.getRotation()) // position, heading
+                    );
+                    return pathPlannerTrajectory;
+                }
+
+                return new PathPlannerTrajectory();
+    }
+
+    public Command chasePoseC(Supplier<Pose2d> poseSupplier, Field2d outputField) {
+        return new PPChasePoseCommand(
+            poseSupplier,
+            this::getPose,
+            holonomicDriveController,
+            this::drive,
+            outputField.getObject("path")::setTrajectory,
+            (startPose, endPose)->DrivebaseS.generateTrajectoryToPose(startPose, endPose, getFieldRelativeLinearSpeedsMPS()),
+            this);
     }
 }
