@@ -59,7 +59,7 @@ public class RobotContainer {
         field.getObject("target").setPose(new Pose2d(4, 4, new Rotation2d()));
         Pose2d targetObject = field.getObject("target").getPose();
 
-        camera = new PhotonCamera("gloworm");
+        camera = new PhotonCamera("NexiGo_N60_FHD_Webcam");
         PhotonCamera.setVersionCheckEnabled(false);
 
         pathPlannerTrajectory = PathPlanner.generatePath(
@@ -107,14 +107,17 @@ public class RobotContainer {
     }
 
     public void periodic() {
-        PhotonPipelineResult result = camera.getLatestResult();
-    if(result.hasTargets()) {
-      Pose2d pose = new Pose3d().transformBy(result.getBestTarget().getCameraToTarget())
-        .toPose2d().transformBy(new Transform2d(new Translation2d(),new Rotation2d(-Math.PI/2)));
-      field.getObject("target").setPose(pose);
-      SmartDashboard.putNumber("ambig", result.getBestTarget().getPoseAmbiguity());
-
-    }
+    //     PhotonPipelineResult result = camera.getLatestResult();
+    //     Pose2d pose;
+    // if(result.hasTargets()) {
+    //   pose = new Pose3d().transformBy(result.getBestTarget().getCameraToTarget())
+    //     .toPose2d().transformBy(new Transform2d(new Translation2d(),new Rotation2d(-Math.PI/2)));
+    //   field.getObject("target").setPose(pose);
+    //   SmartDashboard.putNumber("ambig", result.getBestTarget().getPoseAmbiguity());
+    // }
+    // else {
+    //     field.getObject("target").setPose(field.getRobotPose());
+    // }
         
 field.getObject("pathOTF").setTrajectory(pathPlannerTrajectory);
         drivebaseS.drawRobotOnField(field);

@@ -165,13 +165,10 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             ROBOT_MASS_kg,
             ROBOT_MOI_KGM2,
             moduleSims
-            
         );
 
     public DrivebaseS() {
         navx.reset();
-        
-        // initialize the rotation offsets for the CANCoders
 
         // reset the measured distance driven for each module
         frontLeft.resetDistance();
@@ -179,18 +176,11 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         rearLeft.resetDistance();
         rearRight.resetDistance();
 
-        // Allow the robot rotation controller to treat crossing over the rollover point as a valid way to move
-        // this is useful because if we want to go from 179 to -179 degrees, it's really a 2-degree move, not 358 degreesx
         resetPose(new Pose2d());
-    }
-
-    public void driveRotationVolts(int module, double volts) {
-        modules.get(module).driveRotationVolts(volts);
     }
 
     @Override
     public void periodic() {
-
         // update the odometry every 20ms
         odometry.update(getHeading(), getModuleStates());
 
@@ -238,7 +228,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         commandedRotation = rotation;
 
         isCommandedFieldRelative = isFieldRelative;
-        SmartDashboard.putNumber("desiredRotSpeed", commandedRotation);
 
         /**
          * ChassisSpeeds object to represent the overall state of the robot
@@ -256,7 +245,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         
     }
 
-
     /**
      * Return the desired states of the modules when the robot is stopped. This can be an x-shape to hold against defense,
      * or all modules forward. Here we have it stopping all modules but leaving the angles at their current positions
@@ -265,9 +253,10 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     private SwerveModuleState[] getStoppedStates() {
         SwerveModuleState[] states = new SwerveModuleState[4];
         for (int i = 0; i < NUM_MODULES; i++) {
-            states[i] = new SwerveModuleState(0,new Rotation2d(MathUtil.angleModulus(modules.get(i).getCanEncoderAngle().getRadians())));
+            states[i] = new SwerveModuleState(
+                0,
+                new Rotation2d(MathUtil.angleModulus(modules.get(i).getCanEncoderAngle().getRadians())));
         }
-
         return states;
     }
 
@@ -290,7 +279,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
                 modules.get(i).getCurrentVelocityMetersPerSecond(),
                 modules.get(i).getCanEncoderAngle());
         }
-
         return states;
 
     }
@@ -398,7 +386,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         } else {
             for(int idx = 0; idx < QuadSwerveSim.NUM_MODULES; idx++){
                 double azmthVolts = modules.get(idx).getAppliedRotationVoltage();
-                double wheelVolts = modules.get(idx).getAppliedDriveVoltage();
+                double wheelVolts = modules.get(idx).getAppliedDriveVoltage() * 1.44;
                 moduleSims.get(idx).setInputVoltages(wheelVolts, azmthVolts);
             }
         }

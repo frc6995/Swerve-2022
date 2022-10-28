@@ -66,31 +66,30 @@ public class OperatorControlC extends CommandBase {
          * Otherwise, our max speed would be 1 meter per second and 1 radian per second
          */
 
-        double fwdX = forwardX.getAsDouble();
+        double fwdX = -forwardX.getAsDouble();
         fwdX = Math.copySign(fwdX, fwdX);
         fwdX = deadbandInputs(fwdX);
         fwdX = xRateLimiter.calculate(fwdX);
         fwdX *= Units.feetToMeters(8);
 
-        double fwdY = forwardY.getAsDouble();
+        double fwdY = -forwardY.getAsDouble();
         fwdY = Math.copySign(fwdY, fwdY);
         fwdY = deadbandInputs(fwdY);
         fwdY = yRateLimiter.calculate(fwdY);
         fwdY *= Units.feetToMeters(8);
-        double rot = rotation.getAsDouble();
+
+        double rot = -rotation.getAsDouble();
         //rot = Math.copySign(rot * rot, rot);
         rot = deadbandInputs(rot);
         rot = thetaRateLimiter.calculate(rot);
         rot *= Units.degreesToRadians(DriveConstants.teleopTurnRateDegPerSec);
 
-
         drive.drive(
-            -fwdX,
-            -fwdY,
-            -rot,
+            fwdX,
+            fwdY,
+            rot,
             isFieldRelative
         );
-
     }
 
     // method to deadband inputs to eliminate tiny unwanted values from the joysticks

@@ -22,7 +22,7 @@ public class Robot extends TimedRobot {
         Logger.configureLoggingAndConfig(robotContainer, false);
         if(RobotBase.isSimulation()) {
             NetworkTableInstance.getDefault().stopClient();
-            NetworkTableInstance.getDefault().startClient("gloworm.local", 1735);
+            NetworkTableInstance.getDefault().startClient("localhost", 1735);
         }
 
 
