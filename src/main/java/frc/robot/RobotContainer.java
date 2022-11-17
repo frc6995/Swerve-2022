@@ -22,6 +22,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotController;
@@ -29,6 +30,7 @@ import edu.wpi.first.wpilibj.apriltag.AprilTag;
 import edu.wpi.first.wpilibj.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.wpilibj.drive.Vector2d;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.Field3d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -58,6 +60,8 @@ public class RobotContainer {
 
     @Log
     private final Field2d field = new Field2d();
+    @Log
+    private final Field3d field3d = new Field3d();
 
     PhotonCamera camera;
     
@@ -67,6 +71,8 @@ public class RobotContainer {
     PathPlannerTrajectory pathPlannerTrajectory;
 
     public RobotContainer() {
+        DataLogManager.logNetworkTables(true);
+        DataLogManager.start();
 
         field.getObject("target").setPose(new Pose2d(4, 4, new Rotation2d()));
         Pose2d targetObject = field.getObject("target").getPose();
@@ -76,7 +82,7 @@ public class RobotContainer {
         PhotonCamera.setVersionCheckEnabled(false);
 
         // INIT APRILTAGS
-        var fieldLayoutPath = Filesystem.getDeployDirectory().getAbsolutePath() + "\\apriltag\\layout-2022-formatted.json";
+        var fieldLayoutPath = Filesystem.getDeployDirectory().getAbsolutePath() + "\\apriltag\\2022-rapidreact.json";
         try {
             aprilTagFieldLayout = new AprilTagFieldLayout(fieldLayoutPath);
         }
@@ -85,10 +91,15 @@ public class RobotContainer {
             aprilTagFieldLayout = new AprilTagFieldLayout(List.of(), 0, 0);
         }
         aprilTagFieldLayout.setAlliance(DriverStation.getAlliance());
+        List<Pose3d> poseList = new ArrayList();
         aprilTagFieldLayout.getTags().forEach((tag)->{
             field.getObject("tag" + tag.ID).setPose(
                 tag.pose.toPose2d());
+            poseList.add(tag.pose);
+            
         });
+        field3d.getObject("tags").setPoses(poseList);
+
 
         pathPlannerTrajectory = PathPlanner.generatePath(
             new PathConstraints(4, 4), 
@@ -164,7 +175,7 @@ public class RobotContainer {
         
 field.getObject("pathOTF").setTrajectory(pathPlannerTrajectory);
         drivebaseS.drawRobotOnField(field);
-
+        
 
     }
 

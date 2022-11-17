@@ -233,6 +233,9 @@
         "field": {
           "open": true
         },
+        "field3d": {
+          "open": true
+        },
         "open": true
       },
       "open": true
