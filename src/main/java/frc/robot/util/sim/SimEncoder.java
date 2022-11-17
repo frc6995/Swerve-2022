@@ -1,7 +1,5 @@
 package frc.robot.util.sim;
 
-import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
-
 /** Add your docs here. */
 public class SimEncoder {
     private double position = 0;

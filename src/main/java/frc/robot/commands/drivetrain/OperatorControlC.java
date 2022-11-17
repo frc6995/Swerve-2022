@@ -3,6 +3,8 @@ package frc.robot.commands.drivetrain;
 import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Constants.DriveConstants;
@@ -23,11 +25,11 @@ public class OperatorControlC extends CommandBase {
      * versus using a double which would only update when the constructor is called
      */
     private final DoubleSupplier forwardX;
-    private final SlewRateLimiter xRateLimiter = new SlewRateLimiter(1.5);
+    private final SlewRateLimiter xRateLimiter = new SlewRateLimiter(3);
     private final DoubleSupplier forwardY;
-    private final SlewRateLimiter yRateLimiter = new SlewRateLimiter(1.5);
+    private final SlewRateLimiter yRateLimiter = new SlewRateLimiter(3);
     private final DoubleSupplier rotation;
-    private final SlewRateLimiter thetaRateLimiter = new SlewRateLimiter(1.5);
+    private final SlewRateLimiter thetaRateLimiter = new SlewRateLimiter(3);
     
     private final boolean isFieldRelative;
 
@@ -35,7 +37,6 @@ public class OperatorControlC extends CommandBase {
         DoubleSupplier fwdX, 
         DoubleSupplier fwdY, 
         DoubleSupplier rot,
-        boolean fieldRelative,
         DrivebaseS subsystem
     ) {
 
@@ -44,7 +45,7 @@ public class OperatorControlC extends CommandBase {
         forwardY = fwdY;
         rotation = rot;
 
-        isFieldRelative = fieldRelative;
+        isFieldRelative = true;
 
         addRequirements(subsystem);
 
@@ -55,6 +56,7 @@ public class OperatorControlC extends CommandBase {
         xRateLimiter.reset(0);
         yRateLimiter.reset(0);
         thetaRateLimiter.reset(0);
+        drive.resetThetaProfile(drive.getPoseHeading());
     }
     
     @Override
@@ -66,31 +68,30 @@ public class OperatorControlC extends CommandBase {
          * Otherwise, our max speed would be 1 meter per second and 1 radian per second
          */
 
-        double fwdX = forwardX.getAsDouble();
+        double fwdX = -forwardX.getAsDouble();
         fwdX = Math.copySign(fwdX, fwdX);
         fwdX = deadbandInputs(fwdX);
         fwdX = xRateLimiter.calculate(fwdX);
-        fwdX *= Units.feetToMeters(4);
+        fwdX *= Units.feetToMeters(8);
 
-        double fwdY = forwardY.getAsDouble();
+        double fwdY = -forwardY.getAsDouble();
         fwdY = Math.copySign(fwdY, fwdY);
         fwdY = deadbandInputs(fwdY);
         fwdY = yRateLimiter.calculate(fwdY);
-        fwdY *= Units.feetToMeters(4);
-        double rot = rotation.getAsDouble();
+        fwdY *= Units.feetToMeters(8);
+
+        double rot = -rotation.getAsDouble();
         //rot = Math.copySign(rot * rot, rot);
         rot = deadbandInputs(rot);
         rot = thetaRateLimiter.calculate(rot);
         rot *= Units.degreesToRadians(DriveConstants.teleopTurnRateDegPerSec);
 
-
         drive.drive(
-            -fwdX,
-            -fwdY,
-            -rot,
+            fwdX,
+            fwdY,
+            rot,
             isFieldRelative
         );
-
     }
 
     // method to deadband inputs to eliminate tiny unwanted values from the joysticks

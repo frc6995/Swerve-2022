@@ -1,20 +1,19 @@
 package frc.robot.util.trajectory;
 
+import java.nio.file.Path;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
+import frc.robot.util.trajectory.PPHolonomicDriveController;
 
-import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
@@ -42,10 +41,12 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 @SuppressWarnings("MemberName")
 public class PPSwerveControllerCommand extends CommandBase {
     private final Timer m_timer = new Timer();
-    private final PathPlannerTrajectory m_trajectory;
+    private Supplier<PathPlannerTrajectory> m_trajectorySupplier;
+    private PathPlannerTrajectory m_trajectory;
     private final Supplier<Pose2d> m_pose;
-    private final HolonomicDriveController m_controller;
+    private final PPHolonomicDriveController m_controller;
     private final Consumer<ChassisSpeeds> m_outputChassisSpeedsRobotRelative;
+    private boolean safeToSample = true;
 
     /**
      * Constructs a new PPSwerveControllerCommand that when executed will follow the
@@ -79,10 +80,20 @@ public class PPSwerveControllerCommand extends CommandBase {
     public PPSwerveControllerCommand(
             PathPlannerTrajectory trajectory,
             Supplier<Pose2d> pose,
-            HolonomicDriveController driveController,
+            PPHolonomicDriveController driveController,
             Consumer<ChassisSpeeds> outputChassisSpeedsFieldRelative,
             Subsystem... requirements) {
-        m_trajectory = trajectory;
+                this(()->trajectory, pose, driveController, outputChassisSpeedsFieldRelative, requirements);
+        
+    }
+
+    public PPSwerveControllerCommand(
+        Supplier<PathPlannerTrajectory> trajectory,
+        Supplier<Pose2d> pose,
+        PPHolonomicDriveController driveController,
+        Consumer<ChassisSpeeds> outputChassisSpeedsFieldRelative,
+        Subsystem... requirements) {
+            m_trajectorySupplier = trajectory;
         m_pose = pose;
 
 
@@ -91,24 +102,39 @@ public class PPSwerveControllerCommand extends CommandBase {
         m_outputChassisSpeedsRobotRelative = outputChassisSpeedsFieldRelative;
 
         addRequirements(requirements);
-    }
+        }
+
 
     @Override
     public void initialize() {
         m_timer.reset();
         m_timer.start();
+        m_trajectory = m_trajectorySupplier.get();
+        if(m_trajectory.getStates().size() == 0) {
+            this.safeToSample = false;
+        }
+        else {
+            this.safeToSample = true;
+        }
     }
 
     @Override
     @SuppressWarnings("LocalVariableName")
     public void execute() {
-        double curTime = m_timer.get();
-        var desiredState = (PathPlannerState) m_trajectory.sample(curTime);
-
-        // By passing in the desired state velocity and, we allow the controller to 
-        var targetChassisSpeeds = m_controller.calculate(m_pose.get(), desiredState, desiredState.holonomicRotation);
-        targetChassisSpeeds.omegaRadiansPerSecond += desiredState.angularVelocity.getRadians();
-        m_outputChassisSpeedsRobotRelative.accept(targetChassisSpeeds);
+        PathPlannerState desiredState;
+        if (safeToSample) {
+            double curTime = m_timer.get();
+            desiredState = (PathPlannerState) m_trajectory.sample(curTime);
+        }
+        else {
+            desiredState = new PathPlannerState();
+            desiredState.holonomicRotation = m_pose.get().getRotation();
+            desiredState.poseMeters = m_pose.get();
+            desiredState.holonomicAngularVelocityRadPerSec = 0;
+        }
+            // By passing in the desired state velocity and, we allow the controller to 
+            var targetChassisSpeeds = m_controller.calculate(m_pose.get(), desiredState);
+            m_outputChassisSpeedsRobotRelative.accept(targetChassisSpeeds);
     }
 
     @Override
@@ -118,6 +144,6 @@ public class PPSwerveControllerCommand extends CommandBase {
 
     @Override
     public boolean isFinished() {
-        return m_timer.hasElapsed(m_trajectory.getTotalTimeSeconds());
+        return !safeToSample || m_timer.hasElapsed(m_trajectory.getTotalTimeSeconds());
     }
 }

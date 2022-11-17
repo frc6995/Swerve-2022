@@ -1,6 +1,7 @@
 package frc.robot;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -19,6 +20,12 @@ public class Robot extends TimedRobot {
         LiveWindow.disableAllTelemetry();
         robotContainer = new RobotContainer();
         Logger.configureLoggingAndConfig(robotContainer, false);
+        // if(RobotBase.isSimulation()) {
+        //     NetworkTableInstance.getDefault().stopClient();
+        //     NetworkTableInstance.getDefault().startClient("localhost", 1735);
+        // }
+
+
         NetworkTableInstance.getDefault().setUpdateRate(.01);
     }
 

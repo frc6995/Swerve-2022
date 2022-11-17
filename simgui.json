@@ -6,6 +6,11 @@
           "open": true
         }
       },
+      "SPARK MAX [18]": {
+        "header": {
+          "open": true
+        }
+      },
       "SPARK MAX [2]": {
         "header": {
           "open": true
@@ -81,6 +86,10 @@
         }
       },
       "/Shuffleboard/RobotContainer/field": {
+        "Robot": {
+          "length": 0.6859999895095825,
+          "style": "Box/Image"
+        },
         "backLeft": {
           "arrowSize": 14,
           "length": 0.20000000298023224,
@@ -112,6 +121,15 @@
         "height": 8.229599952697754,
         "image": "C:\\Users\\jashu\\PathWeaver\\Games\\2022 Rapid React\\2022-field.png",
         "left": 74,
+        "path": {
+          "arrows": false,
+          "style": "Line"
+        },
+        "pathOTF": {
+          "arrowSize": 0,
+          "arrows": false,
+          "style": "Line"
+        },
         "pathPlanner": {
           "arrowSize": 8,
           "arrows": false,
@@ -119,14 +137,15 @@
         },
         "right": 1781,
         "target": {
+          "arrowSize": 84,
           "color": [
             0.1442076414823532,
             0.7594936490058899,
             0.23766875267028809,
             255.0
           ],
-          "length": 1.0,
-          "width": 1.0
+          "length": 2.0,
+          "width": 2.0
         },
         "top": 45,
         "width": 16.459199905395508,
@@ -203,7 +222,9 @@
         "SwerveModule[18,17]": {
           "open": true
         },
-        "open": true
+        "thetaController": {
+          "open": true
+        }
       },
       "RobotContainer": {
         "drivebaseS": {
@@ -211,7 +232,8 @@
         },
         "field": {
           "open": true
-        }
+        },
+        "open": true
       },
       "open": true
     },
@@ -228,6 +250,9 @@
         },
         "open": true
       },
+      "open": true
+    },
+    "photonvision": {
       "open": true
     }
   },
@@ -258,7 +283,7 @@
                 0.32156863808631897,
                 1.0
               ],
-              "id": "NT:/SmartDashboard/desiredVel"
+              "id": "NT:/Shuffleboard/DrivebaseS/SwerveModule-FL-[18,17]/getVelocitySetpoint"
             },
             {
               "color": [
@@ -267,7 +292,7 @@
                 0.4078431725502014,
                 1.0
               ],
-              "id": "NT:/SmartDashboard/desiredXVel"
+              "id": "NT:/Shuffleboard/DrivebaseS/SwerveModule-FL-[18,17]/getRotationSetpoint"
             },
             {
               "color": [
@@ -276,25 +301,7 @@
                 0.32156863808631897,
                 1.0
               ],
-              "id": "NT:/SmartDashboard/outputXVel"
-            }
-          ]
-        }
-      ]
-    },
-    "Plot <1>": {
-      "plots": [
-        {
-          "height": 332,
-          "series": [
-            {
-              "color": [
-                0.8666667342185974,
-                0.5176470875740051,
-                0.32156863808631897,
-                1.0
-              ],
-              "id": "SPARK MAX [7]-Applied Output"
+              "id": "NT:/Shuffleboard/DrivebaseS/SwerveModule-FL-[18,17]/getCanEncoderAngle"
             }
           ]
         }
@@ -302,6 +309,39 @@
       "window": {
         "visible": false
       }
+    },
+    "Plot <1>": {
+      "plots": [
+        {
+          "axis": [
+            {
+              "autoFit": true
+            }
+          ],
+          "height": 545,
+          "series": [
+            {
+              "color": [
+                0.3333333432674408,
+                0.658823549747467,
+                0.4078431725502014,
+                1.0
+              ],
+              "id": "NT:/Shuffleboard/DrivebaseS/SwerveModule-FL-[18,17]/getVelocitySetpoint"
+            },
+            {
+              "color": [
+                0.7686275243759155,
+                0.30588236451148987,
+                0.32156863808631897,
+                1.0
+              ],
+              "id": "NT:/Shuffleboard/DrivebaseS/SwerveModule-FL-[18,17]/getCurrentVelocityMetersPerSecond"
+            }
+          ],
+          "viewTime": 2.0
+        }
+      ]
     }
   }
 }
