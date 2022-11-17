@@ -1,32 +1,26 @@
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.sensors.AbsoluteSensorRange;
-import com.ctre.phoenix.sensors.CANCoder;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.REVPhysicsSim;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.SparkMaxPIDController;
 
-import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import frc.robot.util.sim.DutyCycleEncoderSim;
-import frc.robot.util.sim.SimEncoder;
-import io.github.oblarg.oblog.Loggable;
-import io.github.oblarg.oblog.Logger;
-import io.github.oblarg.oblog.annotations.Log;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.util.sim.DutyCycleEncoderSim;
+import frc.robot.util.sim.SimEncoder;
+import frc.robot.util.sim.SparkMaxEncoderWrapper;
+import io.github.oblarg.oblog.Loggable;
+import io.github.oblarg.oblog.ShuffleboardContainerWrapper;
+import io.github.oblarg.oblog.annotations.Log;
 
 public class SwerveModule extends SubsystemBase implements Loggable{
 
@@ -38,34 +32,29 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
     private SwerveModuleState desiredState = new SwerveModuleState();
 
-    private static final double rotationkP = 0.2;
-    private static final double rotationkD = 0.5;
+    private static final double rotationkP = 5.5;//0.2 * 2.0 * Math.PI * DriveConstants.AZMTH_REVS_PER_ENC_REV;
+    private static final double rotationkD = 0.05;
 
-    private static final double drivekP = 0.01;
+    private static final double drivekP = 1;
 
     private final CANSparkMax driveMotor;
     private final CANSparkMax rotationMotor;
 
-    private final RelativeEncoder driveEncoder;
-    private final RelativeEncoder rotationEncoder;
+    private final SparkMaxEncoderWrapper driveEncoderWrapper;
+    private final SparkMaxEncoderWrapper rotationEncoderWrapper;
 
-    /**
-     * Uses meters and m/s
-     */
-    private final SimEncoder driveEncoderSim;
-
-    /**
-     * Uses radians and rad/s
-     */
-    private final SimEncoder rotationEncoderSim;
 
     private final DutyCycleEncoder magEncoder;
     private final DutyCycleEncoderSim magEncoderSim;
+    @Log
+    private final double magEncoderOffset;
 
     //absolute offset for the CANCoder so that the wheels can be aligned when the robot is turned on
 
-    private final SparkMaxPIDController rotationController;
-    private final SparkMaxPIDController driveController;
+    private final PIDController rotationPIDController;
+    // logging position error because it's actually the "process variable", vs its derivative
+    @Log(methodName="getPositionError", name="speedError")
+    private final PIDController drivePIDController;
     private final String loggingName;
 
 
@@ -73,59 +62,20 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         int driveMotorId, 
         int rotationMotorId,
         int magEncoderId,
-        double measuredOffsetRadians
+        double measuredOffsetRadians,
+        String name
     ) {
         driveMotor = new CANSparkMax(driveMotorId, MotorType.kBrushless);
         rotationMotor = new CANSparkMax(rotationMotorId, MotorType.kBrushless);
-        driveMotor.restoreFactoryDefaults(true);
-        rotationMotor.restoreFactoryDefaults(true);
-        driveEncoder = driveMotor.getEncoder();
-        rotationEncoder = rotationMotor.getEncoder();
-
-        driveEncoderSim = new SimEncoder();
-        rotationEncoderSim = new SimEncoder();
-
-        //Config the mag encoder, which is directly on the module rotation shaft.
-
-        magEncoder = new DutyCycleEncoder(magEncoderId);
-        //magEncoder.setDistancePerRotation(2*Math.PI);
-        magEncoder.setDutyCycleRange(1.0/4098.0, 4096.0/4098.0); //min and max pulse width from the mag encoder datasheet
-
-        // The magnet in the module is not aligned straight down the direction the wheel points, but it is fixed in place.
-        // This means we can subtract a fixed position offset from the encoder reading,
-        // I.E. if the module is at 0 but the magnet points at 30 degrees, we can subtract 30 degrees from all readings
-        magEncoder.setPositionOffset(measuredOffsetRadians/(2*Math.PI));
-
-        //Allows us to set what the mag encoder reads in sim.
-        magEncoderSim = new DutyCycleEncoderSim(magEncoder);
-
-        //Drive motors should brake, rotation motors should coast (to allow module realignment)
-        driveMotor.setIdleMode(IdleMode.kBrake);
-        rotationMotor.setIdleMode(IdleMode.kCoast);
-
-        // Config the pid controllers
-        rotationController = rotationMotor.getPIDController();
-        driveController = driveMotor.getPIDController();
-
-        // For a position controller we use a P loop on the position error
-        // and a D loop, which is P on the derivative/rate of change of the position error
-        // Theoretically, if the error is increasing (aka, the setpoint is getting away),
-        // we should match the velocity of the setpoint with our D term to stabilize the error,
-        // then add the additional output proportional to the size of the error.
-        rotationController.setP(rotationkP);
-        rotationController.setD(rotationkD);
-
-        // For a velocity controller we just use P
-        // (and feedforward, which is handled in #setDesiredStateClosedLoop)
-        driveController.setP(drivekP);
+        driveMotor.restoreFactoryDefaults(false);
+        rotationMotor.restoreFactoryDefaults(false);
 
         //set the output of the drive encoder to be in meters (instead of motor rots) for linear measurement
         // wheel diam * pi = wheel circumference (meters/wheel rot) *
         // 1/6.86 wheel rots per motor rot *
         // number of motor rots
         // = number of meters traveled
-
-        driveEncoder.setPositionConversionFactor(
+        driveMotor.getEncoder().setPositionConversionFactor(
             Math.PI * (DriveConstants.WHEEL_RADIUS_M * 2) // meters/ wheel rev
             / DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV // 1/ (enc revs / wheel rev) = wheel rev/enc rev
         );
@@ -135,28 +85,66 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         // 1/60 minutes per sec *
         // 1/5.14 wheel rots per motor rot *
         // motor rpm = wheel speed, m/s
-        driveEncoder.setVelocityConversionFactor(
+        driveMotor.getEncoder().setVelocityConversionFactor(
             (DriveConstants.WHEEL_RADIUS_M * 2) * Math.PI / 60 / DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV
         );
 
         //set the output of the rotation encoder to be in radians
         // (2pi rad/(module rotation)) / 12.8 (motor rots/module rots)
-        rotationEncoder.setPositionConversionFactor(2.0 * Math.PI * DriveConstants.AZMTH_REVS_PER_ENC_REV);
-        loggingName = "SwerveModule[" + driveMotor.getDeviceId() + ',' + rotationMotor.getDeviceId() + ']';
+        rotationMotor.getEncoder().setPositionConversionFactor(2.0 * Math.PI * DriveConstants.AZMTH_REVS_PER_ENC_REV);
+
+        // Create the encoder wrappers after setting conversion factors so that the wrapper reads the conversions.
+        driveEncoderWrapper = new SparkMaxEncoderWrapper(driveMotor);
+        rotationEncoderWrapper = new SparkMaxEncoderWrapper(rotationMotor);
+        //Config the mag encoder, which is directly on the module rotation shaft.
+        magEncoder = new DutyCycleEncoder(magEncoderId);
+        //magEncoder.setDistancePerRotation(2*Math.PI);
+        magEncoder.setDutyCycleRange(1.0/4098.0, 4096.0/4098.0); //min and max pulse width from the mag encoder datasheet
+        magEncoderOffset = measuredOffsetRadians;
+        //magEncoder.setPositionOffset(measuredOffsetRadians/(2*Math.PI));
+        // The magnet in the module is not aligned straight down the direction the wheel points, but it is fixed in place.
+        // This means we can subtract a fixed position offset from the encoder reading,
+        // I.E. if the module is at 0 but the magnet points at 30 degrees, we can subtract 30 degrees from all readings
+        //magEncoder.setPositionOffset(measuredOffsetRadians/(2*Math.PI));
+        
+        //Allows us to set what the mag encoder reads in sim.
+        magEncoderSim = new DutyCycleEncoderSim(magEncoder);
+        magEncoderSim.setAbsolutePosition(measuredOffsetRadians/ (2*Math.PI));
+
+        //Drive motors should brake, rotation motors should coast (to allow module realignment)
+        driveMotor.setIdleMode(IdleMode.kBrake);
+        rotationMotor.setIdleMode(IdleMode.kCoast);
+
+        // Config the pid controllers
+
+        // For a position controller we use a P loop on the position error
+        // and a D loop, which is P on the derivative/rate of change of the position error
+        // Theoretically, if the error is increasing (aka, the setpoint is getting away),
+        // we should match the velocity of the setpoint with our D term to stabilize the error,
+        // then add the additional output proportional to the size of the error.
+        rotationPIDController = new PIDController(rotationkP, 0, rotationkD);
+        // Tell the PID controller that it can move across the -pi to pi rollover point.
+        rotationPIDController.enableContinuousInput(-Math.PI, Math.PI);
+
+        // For a velocity controller we just use P
+        // (and feedforward, which is handled in #setDesiredStateClosedLoop)
+        drivePIDController = new PIDController(drivekP, 0, 0.1);
+        // Give this module a unique name on the dashboard so we have four separate sub-tabs.
+        loggingName = "SwerveModule-" + name + "-[" + driveMotor.getDeviceId() + ',' + rotationMotor.getDeviceId() + ']';
     }
 
+    /**
+     * We override this method to setup Oblog with the module's unique name.
+     */
     public String configureLogName() {
-        return "SwerveModule[" + driveMotor.getDeviceId() + ',' + rotationMotor.getDeviceId() + ']';
+        System.out.println(loggingName);
+        return loggingName;
     }
     /**
      * Reset the driven distance to 0.
      */
-    
     public void resetDistance() {
-
-        driveEncoder.setPosition(0.0);
-        driveEncoderSim.setPosition(0);
-
+        driveEncoderWrapper.setPosition(0);
     }
 
     /**
@@ -164,29 +152,17 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * @return the distance in meters.
      */
     public double getDriveDistanceMeters() {
-        if (RobotBase.isSimulation()) {
-            return driveEncoderSim.getPosition();
-        }
-        else {
-            return driveEncoder.getPosition();
-        }
-
-    }
-
-    public void driveRotationVolts(double volts) {
-        rotationMotor.setVoltage(volts);
+        return driveEncoderWrapper.getPosition();
     }
     
     /**
      * Returns the current angle of the module in radians, from the mag encoder.
      * @return a Rotation2d, where 0 is forward and pi/-pi is backward.
      */
+    @Log(methodName = "getRadians")
     public Rotation2d getMagEncoderAngle() {
-
-        double unsignedAngle = magEncoder.getAbsolutePosition() * 2*Math.PI;
-
+        double unsignedAngle = magEncoder.getAbsolutePosition() * 2*Math.PI - magEncoderOffset;
         return new Rotation2d(unsignedAngle);
-
     }
 
     /**
@@ -195,13 +171,9 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * current angle is always desired angle.
      * @return a Rotation2d, where 0 is forward and pi/-pi is backward.
      */
+    @Log(methodName = "getRadians")
     public Rotation2d getCanEncoderAngle() {
-        if(RobotBase.isSimulation()) {
-            return new Rotation2d(rotationEncoderSim.getPosition());
-        }
-        else {
-            return new Rotation2d(rotationEncoder.getPosition());
-        }
+        return new Rotation2d(rotationEncoderWrapper.getPosition());
     }
 
     /**
@@ -210,19 +182,22 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * current velocity is always desired velocity.
      * @return
      */
+    @Log
     public double getCurrentVelocityMetersPerSecond() {
-        if(RobotBase.isSimulation()) {
-            return driveEncoderSim.getVelocity();
-        }
-        else {
-            return driveEncoder.getVelocity();
-        }
+        return driveEncoderWrapper.getVelocity();
+        // if(RobotBase.isSimulation()) {
+        //     return driveEncoderSim.getVelocity();
+        // }
+        // else {
+        //     return driveEncoder.getVelocity();
+        // }
     }
 
+    @Log
     public double getAppliedDriveVoltage() {
         return driveMotor.getAppliedOutput();
     }
-
+    @Log
     public double getAppliedRotationVoltage() {
         return rotationMotor.getAppliedOutput();
     }
@@ -235,8 +210,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
      * the module offset from forward.
     */
     public void initRotationOffset() {
-        rotationEncoder.setPosition(getMagEncoderAngle().getRadians());
-        rotationEncoderSim.setPosition(getMagEncoderAngle().getRadians());
+        rotationEncoderWrapper.setPosition(getMagEncoderAngle().getRadians());
     }
 
     /**
@@ -250,60 +224,59 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         // Save the desired state for reference (Simulation assumes the modules always are at the desired state)
         
         desiredState = SwerveModuleState.optimize(desiredState, getCanEncoderAngle());
+        SwerveModuleState previousState = this.desiredState;
         this.desiredState = desiredState;
 
-        if(RobotBase.isReal()) {
-            // Feed the angle to the on-MAX rotation position PID
-        rotationController.setReference(
-            this.desiredState.angle.getRadians(),
-            ControlType.kPosition
-        );
-
-        // Feed the speed to the drive MAX velocity PID
-        driveController.setReference(
-            this.desiredState.speedMetersPerSecond, 
-            ControlType.kVelocity,
-            0, 
-            DriveConstants.driveFF.calculate(this.desiredState.speedMetersPerSecond)
-        );
-
-        }
-        else {
-            rotationMotor.setVoltage(rotationkP * 10 * this.desiredState.angle.minus(getCanEncoderAngle()).getRadians());
-            driveMotor.setVoltage(DriveConstants.driveFF.calculate(this.desiredState.speedMetersPerSecond));
-        }
+        
+        double goal = this.desiredState.angle.getRadians();
+        double measurement = getCanEncoderAngle().getRadians();
+        double rotationVolts = rotationPIDController.calculate(measurement, goal);
+        double driveVolts = drivePIDController.calculate(getCurrentVelocityMetersPerSecond(), this.desiredState.speedMetersPerSecond)
+            + DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond,
+            (this.desiredState.speedMetersPerSecond - previousState.speedMetersPerSecond) / 0.02);
+        rotationMotor.setVoltage(rotationVolts);
+        driveMotor.setVoltage(driveVolts);
     }
 
     public void periodic() {
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/magEncoder", getMagEncoderAngle().getRadians());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/rotEncoder", getCanEncoderAngle().getRadians());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/driveEncoder", getDriveDistanceMeters());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/driveVelocity", getCurrentVelocityMetersPerSecond());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/desiredAngle", this.desiredState.angle.getRadians());
-        SmartDashboard.putNumber("/Shuffleboard/DrivebaseS/"+loggingName+"/desiredVelocity",this.desiredState.speedMetersPerSecond);
     }
+
+    public SwerveModuleState getCurrentState() {
+        return new SwerveModuleState(
+                getCurrentVelocityMetersPerSecond(),
+                getCanEncoderAngle());
+    }
+    
 
     /**
      * Resets drive and rotation encoders to 0 position. (in sim and irl)
      */
     public void resetEncoders() {
-
-        driveEncoder.setPosition(0);
-        rotationEncoder.setPosition(0);
-        driveEncoderSim.setPosition(0);
-        rotationEncoderSim.setPosition(0);
-
+        initRotationOffset();
+        driveEncoderWrapper.setPosition(0);
     }
     
     /**
      * Set the state of the module as specified by the simulator
      * @param angle_rad
      * @param wheelPos_m
-     * @param wheelVel_m
+     * @param wheelVel_mps
      */
-    public void setSimState(double angle_rad, double wheelPos_m, double wheelVel_m) {
-        rotationEncoderSim.setPosition(angle_rad);
-        driveEncoderSim.setPosition(wheelPos_m);
-        driveEncoderSim.setPosition(wheelVel_m);
+    public void setSimState(double angle_rad, double wheelPos_m, double wheelVel_mps) {
+        rotationEncoderWrapper.setSimPosition(angle_rad);
+        driveEncoderWrapper.setSimPosition(wheelPos_m);
+        driveEncoderWrapper.setSimVelocity(wheelVel_mps);
+
+        magEncoderSim.setAbsolutePosition((angle_rad +magEncoderOffset)/ (2*Math.PI));
+    }
+
+    @Log
+    public double getRotationSetpoint() {
+        return rotationPIDController.getSetpoint();
+    }
+
+    @Log
+    public double getVelocitySetpoint() {
+        return drivePIDController.getSetpoint();
     }
 }

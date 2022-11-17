@@ -1,38 +1,67 @@
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.sensors.PigeonIMU;
-import com.kauailabs.navx.frc.AHRS;
-import com.revrobotics.REVPhysicsSim;
+import static frc.robot.Constants.DriveConstants.AZMTH_ENC_COUNTS_PER_MODULE_REV;
+import static frc.robot.Constants.DriveConstants.AZMTH_REVS_PER_ENC_REV;
+import static frc.robot.Constants.DriveConstants.BL;
+import static frc.robot.Constants.DriveConstants.BR;
+import static frc.robot.Constants.DriveConstants.FL;
+import static frc.robot.Constants.DriveConstants.FR;
+import static frc.robot.Constants.DriveConstants.NUM_MODULES;
+import static frc.robot.Constants.DriveConstants.ROBOT_MASS_kg;
+import static frc.robot.Constants.DriveConstants.ROBOT_MOI_KGM2;
+import static frc.robot.Constants.DriveConstants.WHEEL_BASE_WIDTH_M;
+import static frc.robot.Constants.DriveConstants.WHEEL_ENC_COUNTS_PER_WHEEL_REV;
+import static frc.robot.Constants.DriveConstants.WHEEL_RADIUS_M;
+import static frc.robot.Constants.DriveConstants.WHEEL_REVS_PER_ENC_REV;
+import static frc.robot.Constants.DriveConstants.m_kinematics;
+import static frc.robot.Constants.DriveConstants.robotToModuleTL;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.List;
+import java.util.function.Supplier;
+
+import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.PathConstraints;
+import com.pathplanner.lib.PathPlanner;
+import com.pathplanner.lib.PathPlannerTrajectory;
+import com.pathplanner.lib.PathPoint;
+import frc.robot.util.trajectory.PPHolonomicDriveController;
+
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.SPI.Port;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.math.util.Units;
-import frc.robot.Constants;
-import frc.robot.Robot;
-import frc.robot.Constants.AutoConstants;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants.CANDevices;
-import static frc.robot.Constants.DriveConstants.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
+import frc.robot.Constants.DriveConstants;
+import frc.robot.util.NomadMathUtil;
 import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
 import frc.robot.util.sim.wpiClasses.SwerveModuleSim;
+import frc.robot.util.trajectory.PPChasePoseCommand;
+import frc.robot.util.trajectory.PPSwerveControllerCommand;
 import io.github.oblarg.oblog.Loggable;
+import io.github.oblarg.oblog.annotations.Log;
 
 public class DrivebaseS extends SubsystemBase implements Loggable {
 
@@ -46,9 +75,9 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
      * 180 degrees added to offset values to invert one side of the robot so that it doesn't spin in place
      */
     private static final double frontLeftAngleOffset =5.708331;
-    private static final double frontRightAngleOffset = -0.638995 + Math.PI;
+    private static final double frontRightAngleOffset = 3.783; //11,12
     private static final double rearLeftAngleOffset = 1.787997;
-    private static final double rearRightAngleOffset = 2.513654 + Math.PI;
+    private static final double rearRightAngleOffset = 5.66;
 
     /**
      * SwerveModule objects
@@ -64,7 +93,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             CANDevices.frontLeftDriveMotorId,
             CANDevices.frontLeftRotationMotorId,
             CANDevices.frontLeftRotationEncoderId,
-            frontLeftAngleOffset
+            frontLeftAngleOffset,
+            "FL"
         );
 
     private final SwerveModule frontRight = 
@@ -72,7 +102,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             CANDevices.frontRightDriveMotorId,
             CANDevices.frontRightRotationMotorId,
             CANDevices.frontRightRotationEncoderId,
-            frontRightAngleOffset
+            frontRightAngleOffset,
+            "FR"
         );
 
     private final SwerveModule rearLeft = 
@@ -80,7 +111,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             CANDevices.rearLeftDriveMotorId,
             CANDevices.rearLeftRotationMotorId,
             CANDevices.rearLeftRotationEncoderId,
-            rearLeftAngleOffset
+            rearLeftAngleOffset,
+            "RL"
         );
 
     private final SwerveModule rearRight = 
@@ -88,7 +120,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             CANDevices.rearRightDriveMotorId,
             CANDevices.rearRightRotationMotorId,
             CANDevices.rearRightRotationEncoderId,
-            rearRightAngleOffset
+            rearRightAngleOffset,
+            "RR"
         );
 
     // commanded values from the joysticks and field relative value to use in AlignWithTargetVision and AlignWithGyro
@@ -98,15 +131,14 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
     private boolean isCommandedFieldRelative = false;
 
-    private final AHRS navx = new AHRS();
+    private final AHRS navx = new AHRS(Port.kMXP);
     private SimGyroSensorModel simNavx = new SimGyroSensorModel();
 
-    public final ProfiledPIDController rotationController = 
-    new ProfiledPIDController(3.0, 0, 0,
-        new TrapezoidProfile.Constraints(4*Math.PI,
-            2*Math.PI
-        )
-    );
+    public final PIDController xController = new PIDController(3.0, 0, 0);
+    public final PIDController yController = new PIDController(3.0, 0, 0);
+    @Log
+    public final ProfiledPIDController thetaController = new ProfiledPIDController(10, 0, 0.1, DriveConstants.THETA_DEFAULT_CONSTRAINTS);
+    public final PPHolonomicDriveController holonomicDriveController = new PPHolonomicDriveController(xController, yController, thetaController);
 
     /**
      * odometry for the robot, measured in meters for linear motion and radians for rotational motion
@@ -125,10 +157,13 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         DrivebaseS.swerveSimModuleFactory()
     );
 
+    @Log.Exclude
     private final List<SwerveModule> modules = List.of(
         frontLeft, frontRight,
         rearLeft, rearRight
     );
+
+
 
     private final QuadSwerveSim quadSwerveSim = 
         new QuadSwerveSim(
@@ -137,18 +172,11 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             ROBOT_MASS_kg,
             ROBOT_MOI_KGM2,
             moduleSims
-            
         );
 
+    
     public DrivebaseS() {
-
         navx.reset();
-
-        // initialize the rotation offsets for the CANCoders
-        frontLeft.initRotationOffset();
-        frontRight.initRotationOffset();
-        rearLeft.initRotationOffset();
-        rearRight.initRotationOffset();
 
         // reset the measured distance driven for each module
         frontLeft.resetDistance();
@@ -156,28 +184,14 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         rearLeft.resetDistance();
         rearRight.resetDistance();
 
-        // Allow the robot rotation controller to treat crossing over the rollover point as a valid way to move
-        // this is useful because if we want to go from 179 to -179 degrees, it's really a 2-degree move, not 358 degrees
-        rotationController.enableContinuousInput(-Math.PI, Math.PI);
-
+        resetPose(new Pose2d());
     }
 
-    public void driveRotationVolts(int module, double volts) {
-        modules.get(module).driveRotationVolts(volts);
-    }
     @Override
     public void periodic() {
-
         // update the odometry every 20ms
         odometry.update(getHeading(), getModuleStates());
 
-        SmartDashboard.putNumber("heading", getHeading().getDegrees());
-        SmartDashboard.putNumber("Odometry x", getPose().getX());
-        SmartDashboard.putNumber("Odometry y", getPose().getY());
-        SmartDashboard.putNumber("fwd", commandedForward);
-        SmartDashboard.putNumber("left", commandedStrafe);
-        SmartDashboard.putNumber("rotation", commandedRotation);
-        
     }
     
     public void drive(ChassisSpeeds speeds) {
@@ -186,19 +200,44 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
         // If we are stopped (no wheel velocity commanded) then any number of wheel angles could be valid.
         // By default it would point all modules forward when stopped. Here, we override this.
-        if(Math.abs(speeds.vxMetersPerSecond) < 0.05 
-            && Math.abs(speeds.vyMetersPerSecond) < 0.05
-            && Math.abs(speeds.omegaRadiansPerSecond) < 0.05) {
+        if(Math.abs(speeds.vxMetersPerSecond) < 0.01
+            && Math.abs(speeds.vyMetersPerSecond) < 0.01
+            && Math.abs(speeds.omegaRadiansPerSecond) < 0.01) {
                 states = getStoppedStates();
         } else {
             // make sure the wheels don't try to spin faster than the maximum speed possible
             states = m_kinematics.toSwerveModuleStates(speeds);
-            SwerveDriveKinematics.desaturateWheelSpeeds(states, maxDriveSpeed);
+            // NomadMathUtil.normalizeDrive(states, speeds,
+            //     Constants.DriveConstants.MAX_FWD_REV_SPEED_MPS,
+            //     Constants.DriveConstants.MAX_ROTATE_SPEED_RAD_PER_SEC,
+            //     Constants.DriveConstants.MAX_MODULE_SPEED_FPS);
         } 
 
         setModuleStates(states);
 
     }
+
+    public void driveFieldRelative(ChassisSpeeds speeds) {
+        drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond, getPoseHeading()));
+    }
+
+    public void driveFieldRelativeHeading(ChassisSpeeds speeds) {
+        double omegaRadiansPerSecond = speeds.omegaRadiansPerSecond;
+        double currentTargetRadians = thetaController.getGoal().position;
+        double newTargetRadians = currentTargetRadians + (omegaRadiansPerSecond/50);
+        double commandRadiansPerSecond = 
+        thetaController.calculate(getPoseHeading().getRadians(),
+        new TrapezoidProfile.State(newTargetRadians,omegaRadiansPerSecond));
+
+        speeds.omegaRadiansPerSecond = commandRadiansPerSecond + thetaController.getSetpoint().velocity;
+        driveFieldRelative(speeds);
+    }
+
+    public void setRotationState(TrapezoidProfile.State state) {
+        thetaController.setGoal(state);
+    }
+
+
     /**
      * method for driving the robot
      * Parameters:
@@ -215,7 +254,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         commandedRotation = rotation;
 
         isCommandedFieldRelative = isFieldRelative;
-        SmartDashboard.putNumber("desiredRotSpeed", commandedRotation);
+
+        
 
         /**
          * ChassisSpeeds object to represent the overall state of the robot
@@ -226,7 +266,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         ChassisSpeeds speeds =
             isFieldRelative
                 ? ChassisSpeeds.fromFieldRelativeSpeeds(
-                    forward, strafe, rotation, getPoseHeading())
+                    forward, strafe, rotation, getPoseHeading().plus(new Rotation2d(rotation * 0.01)))
                 : new ChassisSpeeds(forward, strafe, rotation);
         
         drive(speeds);
@@ -241,9 +281,10 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     private SwerveModuleState[] getStoppedStates() {
         SwerveModuleState[] states = new SwerveModuleState[4];
         for (int i = 0; i < NUM_MODULES; i++) {
-            states[i] = new SwerveModuleState(0,modules.get(i).getCanEncoderAngle());
+            states[i] = new SwerveModuleState(
+                0,
+                new Rotation2d(MathUtil.angleModulus(modules.get(i).getCanEncoderAngle().getRadians())));
         }
-
         return states;
     }
 
@@ -256,7 +297,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             modules.get(i).setDesiredStateClosedLoop(moduleStates[i]);
         }
     }
-
     // returns an array of SwerveModuleStates. 
     // Front(left, right), Rear(left, right)
     // This order is important to remain consistent across the codebase, or commands can get swapped around.
@@ -267,7 +307,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
                 modules.get(i).getCurrentVelocityMetersPerSecond(),
                 modules.get(i).getCanEncoderAngle());
         }
-
         return states;
 
     }
@@ -289,8 +328,11 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public void resetPose(Pose2d pose) {
         quadSwerveSim.modelReset(pose);
         odometry.resetPosition(pose, getHeading());
+        resetThetaProfile(getPoseHeading());
+    }
 
-
+    public void resetThetaProfile(Rotation2d poseHeading) {
+        thetaController.reset(poseHeading.getRadians());
     }
 
     // reset the measured distance driven for each module
@@ -316,12 +358,12 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         }
         return total / 4.0;
     }
-
     // get the current heading of the robot based on the gyro
     public Rotation2d getHeading() {
         return navx.getRotation2d();
     }
 
+    @Log(methodName = "getRadians")
     // Gets the current heading based on odometry. (this value will reflect odometry resets)
     public Rotation2d getPoseHeading() {
         return getPose().getRotation();
@@ -346,8 +388,27 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         simNavx.resetToPose(new Pose2d());
     }
 
+    // Returns a Translation2d representing the linear robot speed in field coordinates.
+    public Translation2d getFieldRelativeLinearSpeedsMPS() {
+        ChassisSpeeds robotRelativeSpeeds = m_kinematics.toChassisSpeeds(getModuleStates());
+        ChassisSpeeds fieldRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+            robotRelativeSpeeds.vxMetersPerSecond,
+            robotRelativeSpeeds.vyMetersPerSecond,
+            robotRelativeSpeeds.omegaRadiansPerSecond,
+            getPoseHeading().unaryMinus()
+        );
+        Translation2d translation = new Translation2d(fieldRelativeSpeeds.vxMetersPerSecond, fieldRelativeSpeeds.vyMetersPerSecond);
+        if (NomadMathUtil.getDistance(translation) < 0.01) {
+            return new Translation2d();
+        }
+        else {
+            return translation;
+        }
+    }
+
     @Override
     public void simulationPeriodic() {
+        
         // set inputs
         if(!DriverStation.isEnabled()){
             for(int idx = 0; idx < QuadSwerveSim.NUM_MODULES; idx++){
@@ -356,7 +417,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         } else {
             for(int idx = 0; idx < QuadSwerveSim.NUM_MODULES; idx++){
                 double azmthVolts = modules.get(idx).getAppliedRotationVoltage();
-                double wheelVolts = modules.get(idx).getAppliedDriveVoltage();
+                double wheelVolts = modules.get(idx).getAppliedDriveVoltage() * 1.44;
                 moduleSims.get(idx).setInputVoltages(wheelVolts, azmthVolts);
             }
         }
@@ -420,11 +481,98 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
                                    );
     }
 
-    static SwerveModule swerveModuleFactory(int driveMotorId, int rotationMotorId, int magEncoderId, double measuredOffsetRadians) {
-        SwerveModule module = new SwerveModule(driveMotorId, rotationMotorId, magEncoderId, measuredOffsetRadians);
-        module.initRotationOffset();
+    static SwerveModule swerveModuleFactory(int driveMotorId, int rotationMotorId, int magEncoderId, double measuredOffsetRadians, String name) {
+        SwerveModule module = new SwerveModule(driveMotorId, rotationMotorId, magEncoderId, measuredOffsetRadians, name);
         module.resetDistance();
         return module;
     }
 
+    public void resetRelativeRotationEncoders() {
+        frontLeft.initRotationOffset();
+        frontRight.initRotationOffset();
+        rearLeft.initRotationOffset();
+        rearRight.initRotationOffset();
+    }
+
+    public void resetPID() {
+        xController.reset();
+        yController.reset();
+        thetaController.reset(new TrapezoidProfile.State(getPoseHeading().getRadians(), 0));
+        // xController.reset(odometry.getPoseMeters().getX());
+        // yController.reset(odometry.getPoseMeters().getY());
+        //thetaController.reset();
+    }
+
+    /****COMMANDS */
+    public Command pathPlannerCommand(Supplier<PathPlannerTrajectory> path) {
+        PPSwerveControllerCommand command = new PPSwerveControllerCommand(
+            path,
+            this::getPose,
+            holonomicDriveController,
+            this::drive,
+            this
+        );
+        return command;
+    }
+
+    public Command pathPlannerCommand(PathPlannerTrajectory path) {
+        PPSwerveControllerCommand command = new PPSwerveControllerCommand(
+            path,
+            this::getPose,
+            holonomicDriveController,
+            this::drive,
+            this
+        );
+        return command;
+    }
+
+    public static PathPlannerTrajectory generateTrajectoryToPose(Pose2d robotPose, Pose2d target, Translation2d currentSpeedVectorMPS) {
+
+                
+                // Robot velocity calculated from module states.
+                Rotation2d fieldRelativeTravelDirection = NomadMathUtil.getDirection(currentSpeedVectorMPS);
+                double travelSpeed = currentSpeedVectorMPS.getNorm();
+
+                
+                Translation2d robotToTargetTranslation = target.getTranslation().minus(robotPose.getTranslation());
+                // Initial velocity override is the component of robot velocity along the robot-to-target vector.
+                // If the robot velocity is pointing away from the target, start at 0 velocity.
+                Rotation2d travelOffsetFromTarget = NomadMathUtil.getDirection(robotToTargetTranslation).minus(fieldRelativeTravelDirection);
+                travelSpeed = Math.max(0, travelSpeed * travelOffsetFromTarget.getCos());
+                // We only want to regenerate if the target is far enough away from the robot. 
+                // PathPlanner has issues with near-zero-length paths and we need a particular tolerance for success anyway.
+                if (
+                    robotToTargetTranslation.getNorm() > 0.1
+                ) {
+                    PathPlannerTrajectory pathPlannerTrajectory = PathPlanner.generatePath(
+                        new PathConstraints(4, 4), 
+                        //Start point. At the position of the robot, initial travel direction toward the target,
+                        // robot rotation as the holonomic rotation, and putting in the (possibly 0) velocity override.
+                        new PathPoint(
+                            robotPose.getTranslation(),
+                            NomadMathUtil.getDirection(robotToTargetTranslation),
+                            robotPose.getRotation(),
+                            travelSpeed), // position, heading
+                        // position, heading
+                        new PathPoint(
+                            target.getTranslation(),
+                            NomadMathUtil.getDirection(robotToTargetTranslation),
+                            target.getRotation()) // position, heading
+                    );
+                    return pathPlannerTrajectory;
+                }
+
+                return new PathPlannerTrajectory();
+    }
+
+    public Command chasePoseC(Supplier<Pose2d> poseSupplier, Field2d outputField) {
+        return new PPChasePoseCommand(
+            poseSupplier,
+            this::getPose,
+            holonomicDriveController,
+            this::drive,
+            outputField.getObject("path")::setTrajectory,
+            (startPose, endPose)->DrivebaseS.generateTrajectoryToPose(startPose, endPose, getFieldRelativeLinearSpeedsMPS()),
+            this);
+    }
 }

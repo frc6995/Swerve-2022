@@ -1,6 +1,5 @@
 package frc.robot.util.sim;
 
-
 /** Add your docs here. */
 public class SimEncoder {
     private double position = 0;
