@@ -24,19 +24,22 @@ import com.pathplanner.lib.PathConstraints;
 import com.pathplanner.lib.PathPlanner;
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPoint;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import frc.robot.util.trajectory.PPHolonomicDriveController;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.SPI.Port;
@@ -50,6 +53,7 @@ import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants.CANDevices;
+import frc.robot.Constants.DriveConstants;
 import frc.robot.util.NomadMathUtil;
 import frc.robot.util.sim.SimGyroSensorModel;
 import frc.robot.util.sim.wpiClasses.QuadSwerveSim;
@@ -132,7 +136,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
     public final PIDController xController = new PIDController(3.0, 0, 0);
     public final PIDController yController = new PIDController(3.0, 0, 0);
-    public final PIDController thetaController = new PIDController(10, 0, 0);
+    @Log
+    public final ProfiledPIDController thetaController = new ProfiledPIDController(10, 0, 0.1, DriveConstants.THETA_DEFAULT_CONSTRAINTS);
     public final PPHolonomicDriveController holonomicDriveController = new PPHolonomicDriveController(xController, yController, thetaController);
 
     /**
@@ -158,6 +163,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         rearLeft, rearRight
     );
 
+
+
     private final QuadSwerveSim quadSwerveSim = 
         new QuadSwerveSim(
             WHEEL_BASE_WIDTH_M,
@@ -167,6 +174,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
             moduleSims
         );
 
+    
     public DrivebaseS() {
         navx.reset();
 
@@ -212,6 +220,24 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public void driveFieldRelative(ChassisSpeeds speeds) {
         drive(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond, getPoseHeading()));
     }
+
+    public void driveFieldRelativeHeading(ChassisSpeeds speeds) {
+        double omegaRadiansPerSecond = speeds.omegaRadiansPerSecond;
+        double currentTargetRadians = thetaController.getGoal().position;
+        double newTargetRadians = currentTargetRadians + (omegaRadiansPerSecond/50);
+        double commandRadiansPerSecond = 
+        thetaController.calculate(getPoseHeading().getRadians(),
+        new TrapezoidProfile.State(newTargetRadians,omegaRadiansPerSecond));
+
+        speeds.omegaRadiansPerSecond = commandRadiansPerSecond + thetaController.getSetpoint().velocity;
+        driveFieldRelative(speeds);
+    }
+
+    public void setRotationState(TrapezoidProfile.State state) {
+        thetaController.setGoal(state);
+    }
+
+
     /**
      * method for driving the robot
      * Parameters:
@@ -229,6 +255,8 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
         isCommandedFieldRelative = isFieldRelative;
 
+        
+
         /**
          * ChassisSpeeds object to represent the overall state of the robot
          * ChassisSpeeds takes a forward and sideways linear value and a rotational value
@@ -238,7 +266,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         ChassisSpeeds speeds =
             isFieldRelative
                 ? ChassisSpeeds.fromFieldRelativeSpeeds(
-                    forward, strafe, rotation, getPoseHeading())
+                    forward, strafe, rotation, getPoseHeading().plus(new Rotation2d(rotation * 0.01)))
                 : new ChassisSpeeds(forward, strafe, rotation);
         
         drive(speeds);
@@ -300,8 +328,11 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public void resetPose(Pose2d pose) {
         quadSwerveSim.modelReset(pose);
         odometry.resetPosition(pose, getHeading());
+        resetThetaProfile(getPoseHeading());
+    }
 
-
+    public void resetThetaProfile(Rotation2d poseHeading) {
+        thetaController.reset(poseHeading.getRadians());
     }
 
     // reset the measured distance driven for each module
@@ -327,7 +358,6 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
         }
         return total / 4.0;
     }
-
     // get the current heading of the robot based on the gyro
     public Rotation2d getHeading() {
         return navx.getRotation2d();
@@ -378,6 +408,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
 
     @Override
     public void simulationPeriodic() {
+        
         // set inputs
         if(!DriverStation.isEnabled()){
             for(int idx = 0; idx < QuadSwerveSim.NUM_MODULES; idx++){
@@ -466,7 +497,7 @@ public class DrivebaseS extends SubsystemBase implements Loggable {
     public void resetPID() {
         xController.reset();
         yController.reset();
-        thetaController.reset();
+        thetaController.reset(new TrapezoidProfile.State(getPoseHeading().getRadians(), 0));
         // xController.reset(odometry.getPoseMeters().getX());
         // yController.reset(odometry.getPoseMeters().getY());
         //thetaController.reset();

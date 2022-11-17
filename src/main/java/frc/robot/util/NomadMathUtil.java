@@ -1,4 +1,5 @@
 package frc.robot.util;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -14,6 +15,10 @@ public class NomadMathUtil {
     public static Rotation2d getDirection(Translation2d transform) {
         //add tiny number so that 0/0 comes out to 0 angle, not a div by 0 error
         return new Rotation2d(transform.getX(), transform.getY());
+    }
+
+    public static Rotation2d getDirection(Pose2d tail, Pose2d head) {
+        return getDirection(head.getTranslation().minus(tail.getTranslation()));
     }
 
     public static double getDistance(Transform2d transform){

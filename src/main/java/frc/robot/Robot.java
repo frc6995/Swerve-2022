@@ -20,10 +20,10 @@ public class Robot extends TimedRobot {
         LiveWindow.disableAllTelemetry();
         robotContainer = new RobotContainer();
         Logger.configureLoggingAndConfig(robotContainer, false);
-        if(RobotBase.isSimulation()) {
-            NetworkTableInstance.getDefault().stopClient();
-            NetworkTableInstance.getDefault().startClient("localhost", 1735);
-        }
+        // if(RobotBase.isSimulation()) {
+        //     NetworkTableInstance.getDefault().stopClient();
+        //     NetworkTableInstance.getDefault().startClient("localhost", 1735);
+        // }
 
 
         NetworkTableInstance.getDefault().setUpdateRate(.01);

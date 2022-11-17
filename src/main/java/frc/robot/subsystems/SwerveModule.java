@@ -33,9 +33,9 @@ public class SwerveModule extends SubsystemBase implements Loggable{
     private SwerveModuleState desiredState = new SwerveModuleState();
 
     private static final double rotationkP = 5.5;//0.2 * 2.0 * Math.PI * DriveConstants.AZMTH_REVS_PER_ENC_REV;
-    private static final double rotationkD = 0;
+    private static final double rotationkD = 0.05;
 
-    private static final double drivekP = 0.00;
+    private static final double drivekP = 1;
 
     private final CANSparkMax driveMotor;
     private final CANSparkMax rotationMotor;
@@ -52,7 +52,8 @@ public class SwerveModule extends SubsystemBase implements Loggable{
     //absolute offset for the CANCoder so that the wheels can be aligned when the robot is turned on
 
     private final PIDController rotationPIDController;
-
+    // logging position error because it's actually the "process variable", vs its derivative
+    @Log(methodName="getPositionError", name="speedError")
     private final PIDController drivePIDController;
     private final String loggingName;
 
@@ -127,8 +128,7 @@ public class SwerveModule extends SubsystemBase implements Loggable{
 
         // For a velocity controller we just use P
         // (and feedforward, which is handled in #setDesiredStateClosedLoop)
-        drivePIDController = new PIDController(drivekP, 0, 0);
-
+        drivePIDController = new PIDController(drivekP, 0, 0.1);
         // Give this module a unique name on the dashboard so we have four separate sub-tabs.
         loggingName = "SwerveModule-" + name + "-[" + driveMotor.getDeviceId() + ',' + rotationMotor.getDeviceId() + ']';
     }
@@ -234,7 +234,6 @@ public class SwerveModule extends SubsystemBase implements Loggable{
         double driveVolts = drivePIDController.calculate(getCurrentVelocityMetersPerSecond(), this.desiredState.speedMetersPerSecond)
             + DriveConstants.driveFeedForward.calculate(this.desiredState.speedMetersPerSecond,
             (this.desiredState.speedMetersPerSecond - previousState.speedMetersPerSecond) / 0.02);
-       
         rotationMotor.setVoltage(rotationVolts);
         driveMotor.setVoltage(driveVolts);
     }

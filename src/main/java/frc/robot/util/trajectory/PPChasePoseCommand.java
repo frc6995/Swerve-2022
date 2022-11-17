@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPlannerTrajectory.PathPlannerState;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import frc.robot.util.trajectory.PPHolonomicDriveController;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.robot.Constants.DriveConstants;
 import frc.robot.subsystems.DrivebaseS;
 import io.github.oblarg.oblog.Loggable;
 import io.github.oblarg.oblog.annotations.Log;
@@ -96,6 +97,7 @@ public class PPChasePoseCommand extends CommandBase implements Loggable {
     @Override
     public void initialize() {
         regenTrajectory();
+        m_drive.thetaController.setConstraints(DriveConstants.NO_CONSTRAINTS);
     }
 
     private void regenTrajectory() {
@@ -137,6 +139,7 @@ public class PPChasePoseCommand extends CommandBase implements Loggable {
     @Override
     public void end(boolean interrupted) {
         m_timer.stop();
+        m_drive.thetaController.setConstraints(DriveConstants.THETA_DEFAULT_CONSTRAINTS);
     }
 
     @Override

@@ -1,6 +1,8 @@
 package frc.robot;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.photonvision.PhotonCamera;
 import org.photonvision.targeting.PhotonPipelineResult;
@@ -13,10 +15,18 @@ import com.pathplanner.lib.PathPoint;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.apriltag.AprilTag;
+import edu.wpi.first.wpilibj.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.wpilibj.drive.Vector2d;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -25,9 +35,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RepeatCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.InputDevices;
+import frc.robot.auto.Trajectories;
 import frc.robot.commands.drivetrain.OperatorControlC;
 import frc.robot.subsystems.DrivebaseS;
 import io.github.oblarg.oblog.annotations.Log;
@@ -42,7 +54,7 @@ public class RobotContainer {
     private final CommandXboxController gamepad = new CommandXboxController(InputDevices.GAMEPAD_PORT);
     @Log
     private final DrivebaseS drivebaseS = new DrivebaseS();
-
+    private AprilTagFieldLayout aprilTagFieldLayout; 
 
     @Log
     private final Field2d field = new Field2d();
@@ -59,8 +71,24 @@ public class RobotContainer {
         field.getObject("target").setPose(new Pose2d(4, 4, new Rotation2d()));
         Pose2d targetObject = field.getObject("target").getPose();
 
+        // INIT PHOTONVISION
         camera = new PhotonCamera("NexiGo_N60_FHD_Webcam");
         PhotonCamera.setVersionCheckEnabled(false);
+
+        // INIT APRILTAGS
+        var fieldLayoutPath = Filesystem.getDeployDirectory().getAbsolutePath() + "\\apriltag\\layout-2022-formatted.json";
+        try {
+            aprilTagFieldLayout = new AprilTagFieldLayout(fieldLayoutPath);
+        }
+        catch (IOException e) {
+            DriverStation.reportWarning("AprilTag Layout not loaded! " + fieldLayoutPath, e.getStackTrace());
+            aprilTagFieldLayout = new AprilTagFieldLayout(List.of(), 0, 0);
+        }
+        aprilTagFieldLayout.setAlliance(DriverStation.getAlliance());
+        aprilTagFieldLayout.getTags().forEach((tag)->{
+            field.getObject("tag" + tag.ID).setPose(
+                tag.pose.toPose2d());
+        });
 
         pathPlannerTrajectory = PathPlanner.generatePath(
             new PathConstraints(4, 4), 
@@ -76,7 +104,6 @@ public class RobotContainer {
                 gamepad::getLeftY,
                 gamepad::getLeftX,
                 gamepad::getRightX,
-                true,
                 drivebaseS
             )
             // new InstantCommand(drivebaseS::resetPID).andThen(
@@ -100,6 +127,22 @@ public class RobotContainer {
 
     public void configureButtonBindings() {
         new Trigger(RobotController::getUserButton).whenActive(()->drivebaseS.resetPose(new Pose2d()));
+        gamepad.pov.center().whenInactive(
+            new InstantCommand(
+                ()->drivebaseS.setRotationState(
+                    new TrapezoidProfile.State(Units.degreesToRadians(gamepad.getPOV()), 0)
+                )
+            )
+        );
+        // gamepad.b().toggleWhenActive( new RunCommand(
+        //     ()->drivebaseS.setRotationState(
+        //         new TrapezoidProfile.State(
+        //             NomadMathUtil.getDirection(
+        //                 drivebaseS.getPose(),
+        //                 Trajectories.HUB_CENTER_POSE
+        //             ).getRadians(), 0)
+        //     )
+        // ));
     }
 
     public Command getAutonomousCommand() {

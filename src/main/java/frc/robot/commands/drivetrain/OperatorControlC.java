@@ -3,6 +3,8 @@ package frc.robot.commands.drivetrain;
 import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Constants.DriveConstants;
@@ -35,7 +37,6 @@ public class OperatorControlC extends CommandBase {
         DoubleSupplier fwdX, 
         DoubleSupplier fwdY, 
         DoubleSupplier rot,
-        boolean fieldRelative,
         DrivebaseS subsystem
     ) {
 
@@ -44,7 +45,7 @@ public class OperatorControlC extends CommandBase {
         forwardY = fwdY;
         rotation = rot;
 
-        isFieldRelative = fieldRelative;
+        isFieldRelative = true;
 
         addRequirements(subsystem);
 
@@ -55,6 +56,7 @@ public class OperatorControlC extends CommandBase {
         xRateLimiter.reset(0);
         yRateLimiter.reset(0);
         thetaRateLimiter.reset(0);
+        drive.resetThetaProfile(drive.getPoseHeading());
     }
     
     @Override
