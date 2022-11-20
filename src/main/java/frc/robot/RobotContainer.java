@@ -92,13 +92,13 @@ public class RobotContainer {
         }
         aprilTagFieldLayout.setAlliance(DriverStation.getAlliance());
         List<Pose3d> poseList = new ArrayList();
-        aprilTagFieldLayout.getTags().forEach((tag)->{
-            field.getObject("tag" + tag.ID).setPose(
-                tag.pose.toPose2d());
-            poseList.add(tag.pose);
+        // aprilTagFieldLayout.getTags().forEach((tag)->{
+        //     field.getObject("tag" + tag.ID).setPose(
+        //         tag.pose.toPose2d());
+        //     poseList.add(tag.pose);
             
-        });
-        field3d.getObject("tags").setPoses(poseList);
+        // });
+        // field3d.getObject("tags").setPoses(poseList);
 
 
         pathPlannerTrajectory = PathPlanner.generatePath(
@@ -175,8 +175,8 @@ public class RobotContainer {
         
 field.getObject("pathOTF").setTrajectory(pathPlannerTrajectory);
         drivebaseS.drawRobotOnField(field);
-        
-
+        field3d.getObject("Robot").setPose(drivebaseS.getPose().getX(), drivebaseS.getPose().getY(), 0, new Rotation3d(0, 0, drivebaseS.getPoseHeading().getRadians()));
+        field3d.getObject("traj").setTrajectory(pathPlannerTrajectory);
     }
 
     public void onEnabled(){
